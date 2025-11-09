@@ -4,7 +4,7 @@ A probabilistic forensics tool for detecting AI-generated code in GitHub reposit
 
 ## Features
 
-### Phase 1 - Heuristic Detection (Current)
+### ✅ Phase 1 - Heuristic Detection (Complete)
 
 - **Multi-language support**: Python, JavaScript, TypeScript, Go, Rust, C/C++, Java, and more
 - **Stylometric analysis**: Comment patterns, naming conventions, formatting consistency
@@ -13,11 +13,25 @@ A probabilistic forensics tool for detecting AI-generated code in GitHub reposit
 - **Detailed reports**: JSON and Markdown outputs with file-level breakdowns
 - **CLI interface**: Easy command-line usage
 
-### Planned Features
+### ✅ Phase 2 - ML Enhancement (Complete)
 
-- **Phase 2**: MLX-powered code embeddings and learned classifiers (Qwen-based)
-- **Phase 3**: Natural language explanations via Qwen
-- **Phase 4**: Comprehensive test suite and benchmarks
+- **Code embeddings**: MLX-based embeddings for semantic analysis (with hash fallback)
+- **Learned classifier**: Trainable ML classifier using embeddings + features
+- **Ensemble detection**: Combines heuristics with ML for robust predictions
+- **Flexible backends**: Supports MLX (Apple Silicon) and fallback modes
+
+### ✅ Phase 3 - Natural Language Explanations (Complete)
+
+- **AI-powered explanations**: Qwen-based natural language explanations
+- **Template fallback**: Works without LLM using intelligent templates
+- **Per-file reasoning**: Explains why specific files were flagged
+- **Enhanced reports**: JSON and Markdown with integrated explanations
+
+### 🚧 Phase 4 - Validation (Planned)
+
+- Comprehensive test suite and benchmarks
+- Adversarial testing
+- Public dataset evaluation
 
 ## Installation
 
@@ -35,29 +49,37 @@ pip install -e .
 
 ## Quick Start
 
-### Analyze a GitHub Repository
+### Basic Detection (Phase 1)
 
 ```bash
+# Simple analysis with heuristics
 python -m src.cli https://github.com/user/repo
-```
 
-### Analyze a Local Directory
-
-```bash
+# Local directory
 python -m src.cli /path/to/local/repo
+
+# Custom output
+python -m src.cli ./my_project -f json -o ./reports
 ```
 
-### Custom Output and Format
+### Enhanced Detection (Phase 2+3)
 
 ```bash
-# Generate only JSON report
-python -m src.cli ./my_project -f json -o ./reports
+# Enhanced with ML + explanations
+python -m src.cli_enhanced ./repo --mode enhanced
 
-# Use custom config
-python -m src.cli https://github.com/user/repo -c configs/custom.yaml
+# With hash embeddings (fast, no dependencies)
+python -m src.cli_enhanced ./repo --embedder hash
 
-# Quiet mode (minimal output)
-python -m src.cli ./my_project -q
+# With MLX embeddings (Apple Silicon)
+python -m src.cli_enhanced ./repo --embedder mlx
+
+# With Qwen explanations (requires MLX-LM)
+python -m src.cli_enhanced ./repo --explainer qwen
+
+# Disable ML or explanations
+python -m src.cli_enhanced ./repo --no-ml
+python -m src.cli_enhanced ./repo --no-explanations
 ```
 
 ## How It Works
@@ -278,28 +300,33 @@ Best used as one signal among many:
 
 ### ✅ Phase 1 - Heuristic Prototype (Complete)
 
-- Basic feature extraction
-- Heuristic scoring
-- CLI and reports
+- ✓ 34 extracted features (stylometry, structural, history)
+- ✓ Heuristic scoring and aggregation
+- ✓ CLI and dual report formats
+- ✓ Multi-language support
 
-### 🚧 Phase 2 - ML Enhancement (Planned)
+### ✅ Phase 2 - ML Enhancement (Complete)
 
-- MLX code embeddings
-- Learned classifier (replaces heuristics)
-- Training pipeline
+- ✓ MLX code embedder (768-dim embeddings)
+- ✓ Hash fallback embedder (no dependencies)
+- ✓ Trainable ML classifier
+- ✓ Ensemble classifier (heuristic + ML)
+- ✓ Integration into detection pipeline
 
-### 📋 Phase 3 - Explanations (Planned)
+### ✅ Phase 3 - Explanations (Complete)
 
-- Qwen-based natural language explanations
-- Per-snippet reasoning
-- Improved calibration
+- ✓ Qwen-based explanation generator
+- ✓ Template-based fallback (no LLM needed)
+- ✓ Natural language reasoning per file
+- ✓ Enhanced reporters with explanations
+- ✓ Intelligent feature explanation mapping
 
-### 📋 Phase 4 - Validation (Planned)
+### 🚧 Phase 4 - Validation (In Progress)
 
-- Test harness
-- Benchmark datasets
-- Adversarial testing
-- Documentation
+- ⏳ Comprehensive test harness
+- ⏳ Public benchmark datasets
+- ⏳ Adversarial testing
+- ⏳ ROC/calibration analysis
 
 ## Contributing
 
