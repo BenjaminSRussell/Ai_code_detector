@@ -62,8 +62,9 @@ logs/
 # Reports
 reports/
 *.json
-*.md
+reports/*.md
 !README.md
+!IMPLEMENTATION_NOTES.md
 !examples/*.md
 
 # MLX specific
