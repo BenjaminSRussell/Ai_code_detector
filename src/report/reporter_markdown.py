@@ -143,15 +143,15 @@ class MarkdownReporter:
     def _get_verdict(self, probability: float) -> str:
         """Get human-readable verdict."""
         if probability >= 0.8:
-            return "🔴 Very likely AI-generated"
+            return "Very likely AI-generated"
         elif probability >= 0.6:
-            return "🟠 Likely AI-generated"
+            return "Likely AI-generated"
         elif probability >= 0.4:
-            return "🟡 Possibly AI-assisted"
+            return "Possibly AI-assisted"
         elif probability >= 0.2:
-            return "🟢 Possibly human-written"
+            return "Possibly human-written"
         else:
-            return "✅ Likely human-written"
+            return "Likely human-written"
 
     def _create_probability_bar(self, probability: float) -> str:
         """Create ASCII probability bar."""

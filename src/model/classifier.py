@@ -1,7 +1,4 @@
-"""Learned classifier for AI code detection (Phase 2).
-
-Replaces heuristic aggregator with trained classifier using embeddings + features.
-"""
+"""ML classifier combining code embeddings with extracted features."""
 
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -17,10 +14,7 @@ except ImportError:
 
 
 class MLClassifier:
-    """Machine learning classifier for AI code detection.
-
-    Combines code embeddings with extracted features to predict AI probability.
-    """
+    """ML classifier combining embeddings and features."""
 
     def __init__(
         self,
@@ -280,11 +274,7 @@ class MLClassifier:
 
 
 class EnsembleClassifier:
-    """Ensemble of heuristic + ML classifiers.
-
-    Combines traditional heuristic scoring with learned classifier
-    for more robust predictions.
-    """
+    """Ensemble combining heuristic and ML scoring."""
 
     def __init__(
         self,

@@ -1,7 +1,4 @@
-"""Natural language explanation generator using Qwen (Phase 3).
-
-Generates human-readable explanations for AI detection results.
-"""
+"""Natural language explanation generator with Qwen or template fallback."""
 
 from typing import Dict, List, Optional
 from pathlib import Path
@@ -40,11 +37,7 @@ class ExplanationGenerator:
 
 
 class QwenExplainer(ExplanationGenerator):
-    """Qwen-based explanation generator.
-
-    Uses Qwen model via MLX to generate natural language explanations
-    for why code was flagged as AI-generated.
-    """
+    """Qwen-based explanation generator via MLX."""
 
     def __init__(
         self,
@@ -266,11 +259,7 @@ Explanation:"""
 
 
 class TemplateExplainer(ExplanationGenerator):
-    """Simple template-based explainer without LLM dependency.
-
-    Faster and more predictable than LLM-based explanation,
-    but less flexible and contextual.
-    """
+    """Template-based explainer without LLM dependency."""
 
     def __init__(self):
         """Initialize template explainer."""
@@ -299,10 +288,7 @@ class TemplateExplainer(ExplanationGenerator):
 
 
 class BatchExplainer:
-    """Batch explanation generator for multiple code snippets.
-
-    Optimizes explanation generation for large codebases.
-    """
+    """Batch explanation generator for multiple code snippets."""
 
     def __init__(self, explainer: ExplanationGenerator):
         """Initialize batch explainer.

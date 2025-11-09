@@ -1,8 +1,4 @@
-"""MLX-based code embedder for Phase 2.
-
-This module provides code embedding functionality using MLX framework,
-designed to work with Qwen or other code-specialized models.
-"""
+"""Code embedding using MLX or hash-based fallback."""
 
 from pathlib import Path
 from typing import List, Optional, Union
@@ -40,11 +36,7 @@ class CodeEmbedder:
 
 
 class MLXCodeEmbedder(CodeEmbedder):
-    """MLX-based code embedder using language models.
-
-    Uses MLX framework to run efficient code embeddings on Apple Silicon.
-    Supports various code-specialized models like CodeBERT, Qwen-Coder, etc.
-    """
+    """MLX-based code embedder for Apple Silicon."""
 
     def __init__(
         self,
@@ -72,13 +64,7 @@ class MLXCodeEmbedder(CodeEmbedder):
             self._load_model(model_path)
 
     def _load_model(self, model_path: str):
-        """Load MLX model from path.
-
-        Args:
-            model_path: Path to model directory
-        """
-        # For Phase 2, this would load actual MLX weights
-        # Placeholder for now - would integrate with mlx-lm
+        """Load MLX model."""
         print(f"Loading MLX model from {model_path}...")
         # self.model, self.tokenizer = load(model_path)
 
@@ -138,17 +124,7 @@ class MLXCodeEmbedder(CodeEmbedder):
             raise ValueError(f"Unknown pooling: {self.pooling}")
 
     def _fallback_embedding(self, code: str) -> List[float]:
-        """Generate fallback embedding using simple heuristics.
-
-        This is used when MLX model is not available.
-        Produces a 768-dim vector based on code characteristics.
-
-        Args:
-            code: Source code string
-
-        Returns:
-            768-dimensional feature vector
-        """
+        """Generate 768-dim embedding using code characteristics."""
         import hashlib
         import math
 
@@ -201,11 +177,7 @@ class MLXCodeEmbedder(CodeEmbedder):
 
 
 class SimpleHashEmbedder(CodeEmbedder):
-    """Simple hash-based embedder for testing/fallback.
-
-    Uses hash buckets and simple features for fast embedding generation.
-    Not as powerful as learned embeddings but works without dependencies.
-    """
+    """Hash-based embedder with no external dependencies."""
 
     def __init__(self, dim: int = 256):
         """Initialize hash embedder.

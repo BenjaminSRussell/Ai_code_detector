@@ -1,4 +1,4 @@
-"""Enhanced CLI with Phase 2+3 features."""
+"""Enhanced CLI with ML classifier and explanations."""
 
 import sys
 from pathlib import Path
@@ -101,11 +101,11 @@ def main(
         if mode == 'enhanced':
             print("Mode: Enhanced (Phase 1 + Phase 2 + Phase 3)")
             if not no_ml:
-                print("  ✓ ML classifier enabled")
-                print(f"  ✓ Embedder: {embedder}")
+                print("  ML classifier enabled")
+                print(f"  Embedder: {embedder}")
             if not no_explanations:
-                print("  ✓ Explanations enabled")
-                print(f"  ✓ Explainer: {explainer}")
+                print("  Explanations enabled")
+                print(f"  Explainer: {explainer}")
         else:
             print("Mode: Basic (Phase 1 only)")
 
@@ -209,9 +209,9 @@ def main(
 
     # Mode indicator
     if mode == 'enhanced':
-        click.secho("✓ Enhanced detection with ML + explanations", fg='cyan')
+        click.secho("Enhanced detection with ML + explanations", fg='cyan')
     else:
-        click.secho("ℹ Basic detection (use --mode enhanced for ML + explanations)", fg='blue')
+        click.secho("Basic detection (use --mode enhanced for ML + explanations)", fg='blue')
 
     click.echo()
     click.echo("Note: This is probabilistic analysis. Use as one signal among many.")

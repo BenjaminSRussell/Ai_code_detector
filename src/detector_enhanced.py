@@ -1,7 +1,4 @@
-"""Enhanced AI code detector with Phase 2 & 3 features.
-
-Integrates MLX embeddings, learned classifier, and Qwen explanations.
-"""
+"""Enhanced detector integrating heuristics, ML classifier, and explanations."""
 
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -31,11 +28,7 @@ from .model.explainer import get_explainer, ExplanationGenerator
 
 
 class EnhancedAICodeDetector:
-    """Enhanced detector with ML classifier and explanations.
-
-    Combines Phase 1 (heuristics), Phase 2 (embeddings + ML),
-    and Phase 3 (Qwen explanations) into unified system.
-    """
+    """Detector with heuristics, ML classifier, and explanations."""
 
     def __init__(
         self,
