@@ -1,0 +1,84 @@
+# Default configuration for AI code detector
+
+# Ingestion settings
+ingestion:
+  supported_extensions:
+    - .py
+    - .js
+    - .ts
+    - .tsx
+    - .jsx
+    - .go
+    - .rs
+    - .cpp
+    - .c
+    - .h
+    - .java
+    - .rb
+
+  excluded_dirs:
+    - node_modules
+    - dist
+    - build
+    - .git
+    - __pycache__
+    - vendor
+    - venv
+    - env
+    - .venv
+    - target
+    - bin
+    - obj
+
+  max_file_size_mb: 1
+
+# Feature extraction settings
+features:
+  stylometry:
+    comment_boilerplate_patterns:
+      - "This function"
+      - "This method"
+      - "This class"
+      - "In this function"
+      - "Returns:"
+      - "Args:"
+      - "Parameters:"
+
+    generic_names:
+      - result
+      - data
+      - temp
+      - tmp
+      - helper
+      - utils
+      - process
+      - handle
+      - manager
+      - service
+
+  structural:
+    max_cyclomatic_complexity: 10
+    min_function_lines: 3
+
+  history:
+    recent_days_threshold: 30
+    burst_threshold: 1000  # LOC added in single commit
+
+# Scoring thresholds
+scoring:
+  snippet_threshold: 0.7
+  file_threshold: 0.6
+  repo_threshold: 0.5
+
+  weights:
+    stylometry: 0.3
+    structural: 0.3
+    history: 0.2
+    embeddings: 0.2
+
+# Report settings
+report:
+  top_n_files: 10
+  top_n_snippets: 20
+  include_code_context: true
+  context_lines: 3
