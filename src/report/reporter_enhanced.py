@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict, Any
 import json
 
-from ..model.aggregator import RepoScore
+from model.aggregator import RepoScore
 
 
 class EnhancedJSONReporter:

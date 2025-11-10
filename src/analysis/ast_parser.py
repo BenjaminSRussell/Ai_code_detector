@@ -59,16 +59,9 @@ class PythonASTParser:
         """
         try:
             tree = ast.parse(code)
-        except SyntaxError:
-            # Return empty result for unparseable code
-            return FileAST(
-                file_path=file_path,
-                language="python",
-                functions=[],
-                classes=[],
-                imports=[],
-                global_vars=[],
-            )
+        except SyntaxError as e:
+            # Re-raise the exception to be caught by the caller
+            raise e
 
         functions = []
         classes = []

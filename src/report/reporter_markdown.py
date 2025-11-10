@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Dict
 
-from ..model.aggregator import RepoScore, FileScore
+from model.aggregator import RepoScore, FileScore
 
 
 class MarkdownReporter:

@@ -13,14 +13,14 @@ except ImportError:
     def tqdm(iterable, **kwargs):
         return iterable
 
-from .ingest.git_loader import GitLoader, RepoInfo
-from .ingest.file_filter import FileFilter, FileInfo
-from .analysis.tokenizer import CodeTokenizer
-from .analysis.ast_parser import ASTParserFactory, FileAST
-from .analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
-from .analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
-from .analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
-from .model.aggregator import HeuristicAggregator, FileScore, RepoScore
+from ingest.git_loader import GitLoader, RepoInfo
+from ingest.file_filter import FileFilter, FileInfo
+from analysis.tokenizer import CodeTokenizer
+from analysis.ast_parser import ASTParserFactory, FileAST
+from analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
+from analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
+from analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
+from model.aggregator import HeuristicAggregator, FileScore, RepoScore
 
 
 class AICodeDetector:
@@ -179,7 +179,15 @@ class AICodeDetector:
             try:
                 file_ast = parser.parse_file(file_info.path, code)
             except Exception:
-                pass
+                # Return low-confidence score for files that fail to parse
+                return FileScore(
+                    file_path=str(file_info.relative_path),
+                    ai_probability=0.0,
+                    stylometry_score=0.0,
+                    structural_score=0.0,
+                    feature_explanations={"error": "AST parsing failed"},
+                    suspicious_snippets=[],
+                )
 
         # Extract features
         stylometry_features = self.stylometry_analyzer.analyze_file(

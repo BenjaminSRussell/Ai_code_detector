@@ -3,6 +3,8 @@
 import pytest
 from pathlib import Path
 import sys
+import tempfile
+import shutil
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -11,7 +13,7 @@ from analysis.tokenizer import CodeTokenizer
 from analysis.ast_parser import PythonASTParser
 from analysis.metrics_stylometry import StylometryAnalyzer
 from analysis.metrics_structural import StructuralAnalyzer
-
+from detector import AICodeDetector
 
 def test_tokenizer():
     """Test code tokenizer."""
@@ -93,8 +95,6 @@ def handle_request():
 
 def test_ai_vs_human_samples():
     """Test that AI sample scores higher than human sample."""
-    from detector import AICodeDetector
-
     detector = AICodeDetector()
 
     # Analyze AI sample
@@ -103,9 +103,6 @@ def test_ai_vs_human_samples():
 
     if ai_sample_path.exists() and human_sample_path.exists():
         # Create temp directory with just these files
-        import tempfile
-        import shutil
-
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
 
