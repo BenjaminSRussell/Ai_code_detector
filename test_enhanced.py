@@ -18,7 +18,7 @@ print("-" * 60)
 from model.embedder_mlx import get_embedder
 
 # Test hash embedder (fallback)
-embedder = get_embedder(backend="hash", dim=256)
+embedder = get_embedder(backend="hash", dim=768)
 
 test_code = """
 def process_data(data):
@@ -28,7 +28,7 @@ def process_data(data):
 
 embedding = embedder.embed(test_code)
 
-assert len(embedding) == 256, f"Expected 256-dim embedding, got {len(embedding)}"
+assert len(embedding) == 768, f"Expected 768-dim embedding, got {len(embedding)}"
 assert all(isinstance(x, float) for x in embedding), "Embedding should be floats"
 
 print(f"✓ Generated {len(embedding)}-dimensional embedding")
@@ -45,7 +45,7 @@ from model.classifier import MLClassifier
 classifier = MLClassifier()
 
 # Test prediction
-features = [0.5] * 23  # 12 stylometry + 11 structural
+features = [0.5] * 34  # 12 stylometry + 11 structural + 11 history (mocked)
 probability = classifier.predict(embedding, features)
 
 assert 0.0 <= probability <= 1.0, "Probability should be between 0 and 1"

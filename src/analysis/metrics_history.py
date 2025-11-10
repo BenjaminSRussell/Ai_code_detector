@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from collections import Counter
 import math
 
-from ..ingest.git_loader import RepoInfo, CommitInfo
+from ingest.git_loader import RepoInfo, CommitInfo
 
 
 @dataclass

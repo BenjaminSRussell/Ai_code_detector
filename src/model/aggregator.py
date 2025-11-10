@@ -4,9 +4,9 @@ from typing import Dict, List, Tuple
 from dataclasses import dataclass
 import numpy as np
 
-from ..analysis.metrics_stylometry import StylometricFeatures
-from ..analysis.metrics_structural import StructuralFeatures
-from ..analysis.metrics_history import HistoryFeatures
+from analysis.metrics_stylometry import StylometricFeatures
+from analysis.metrics_structural import StructuralFeatures
+from analysis.metrics_history import HistoryFeatures
 
 
 @dataclass

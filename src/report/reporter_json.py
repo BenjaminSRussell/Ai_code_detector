@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any
 
-from ..model.aggregator import RepoScore, FileScore
+from model.aggregator import RepoScore, FileScore
 
 
 class JSONReporter:
