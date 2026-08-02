@@ -43,6 +43,8 @@ class PerformanceAnalyzer:
         for cls in file_ast.classes:
             functions.extend(cls.methods)
 
+        functions = self._exclude_nested_functions(functions)
+
         hotspots = []
         for func in functions:
             result = self._analyze_function(func, str(file_ast.file_path))
@@ -116,13 +118,20 @@ class PerformanceAnalyzer:
 
     def _is_self_recursive(self, node: ast.AST, func_name: str) -> bool:
         for child in ast.walk(node):
-            if isinstance(child, ast.Call) and isinstance(child.func, ast.Name):
-                if child.func.id == func_name:
+            if isinstance(child, ast.Call):
+                if isinstance(child.func, ast.Name) and child.func.id == func_name:
                     return True
+                if isinstance(child.func, ast.Attribute) and child.func.attr == func_name:
+                    if isinstance(child.func.value, ast.Name) and child.func.value.id == 'self':
+                        return True
         return False
 
     def _is_memoized(self, func: FunctionInfo) -> bool:
-        return any(d.split('(')[0] in self.MEMO_DECORATORS for d in func.decorators)
+        for d in func.decorators:
+            name = d.split('(')[0].split('.')[-1]
+            if name in self.MEMO_DECORATORS:
+                return True
+        return False
 
     def _count_calls_in_loops(self, node: ast.AST) -> int:
         count = 0
@@ -137,3 +146,19 @@ class PerformanceAnalyzer:
 
         walk(node, False)
         return count
+
+    def _exclude_nested_functions(self, functions: List[FunctionInfo]) -> List[FunctionInfo]:
+        """Drop functions whose line range is fully contained within another
+        function's range (nested/closure defs) so a hotspot isn't double-reported
+        under both the outer and inner function names."""
+        result = []
+        for func in functions:
+            is_nested = any(
+                other is not func
+                and other.start_line <= func.start_line
+                and func.end_line <= other.end_line
+                for other in functions
+            )
+            if not is_nested:
+                result.append(func)
+        return result
