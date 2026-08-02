@@ -43,8 +43,7 @@ class SATDAnalyzer:
         markers = []
 
         for i, line in enumerate(lines, start=1):
-            match = self.MARKER_PATTERN.search(line)
-            if match:
+            for match in self.MARKER_PATTERN.finditer(line):
                 markers.append(SATDMarker(
                     file_path=file_path,
                     line=i,
