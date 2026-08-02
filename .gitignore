@@ -62,6 +62,7 @@ logs/
 # Reports
 reports/
 *.json
+AI_SCAN_FINDINGS.md
 reports/*.md
 !README.md
 !IMPLEMENTATION_NOTES.md
