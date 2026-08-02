@@ -41,11 +41,19 @@ class RepoDuplicationAnalyzer:
         n = self.ngram_size
 
         for file_path, code in file_contents.items():
-            lines = [line.strip() for line in code.split('\n') if line.strip()]
+            # Keep track of original line numbers alongside stripped content
+            numbered_lines = [
+                (idx + 1, line.strip())
+                for idx, line in enumerate(code.split('\n'))
+                if line.strip()
+            ]
 
-            for i in range(len(lines) - n + 1):
-                ngram = tuple(lines[i:i + n])
-                ngram_locations[ngram].append((file_path, i + 1))
+            for i in range(len(numbered_lines) - n + 1):
+                # Extract content for n-gram
+                ngram = tuple(numbered_lines[j][1] for j in range(i, i + n))
+                # Use original line number of the first line in the window
+                start_line = numbered_lines[i][0]
+                ngram_locations[ngram].append((file_path, start_line))
                 total_ngrams += 1
 
         duplicate_blocks = []
