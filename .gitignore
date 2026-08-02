@@ -70,3 +70,6 @@ reports/*.md
 # MLX specific
 mlx_models/
 checkpoints/
+
+# Worktrees
+.worktrees/
