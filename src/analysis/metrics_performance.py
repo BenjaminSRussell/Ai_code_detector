@@ -2,6 +2,11 @@
 
 import ast
 import textwrap
+import subprocess
+import sys
+import tempfile
+import pstats
+from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 
@@ -162,3 +167,82 @@ class PerformanceAnalyzer:
             if not is_nested:
                 result.append(func)
         return result
+
+
+class PerformanceProfiler:
+    """Runs a repo's test suite under cProfile to get real per-function timings.
+
+    This executes code from the scanned repository as a subprocess. Callers
+    MUST treat this as an explicit opt-in action (e.g. a CLI flag), never a
+    default/automatic step, since the scanned repo's code is untrusted.
+    """
+
+    def __init__(self, timeout_seconds: int = 30):
+        self.timeout_seconds = timeout_seconds
+
+    def detect_entry_point(self, repo_path: Path) -> Optional[List[str]]:
+        """Find a safe, discoverable way to exercise the repo's code.
+
+        Returns a pytest invocation (as argv, minus the python executable)
+        if a tests directory is found, otherwise None.
+        """
+        tests_dir = repo_path / "tests"
+        if tests_dir.is_dir() and any(tests_dir.glob("test_*.py")):
+            return ["-m", "pytest", str(tests_dir), "-q"]
+        return None
+
+    def profile(self, repo_path: Path, entry_point: List[str]) -> Dict[str, float]:
+        """Run entry_point under cProfile and return per-function cumulative time.
+
+        Args:
+            repo_path: Directory to run the command in
+            entry_point: Argv to pass to the interpreter (from detect_entry_point)
+
+        Returns:
+            Mapping of "file:function" to cumulative seconds. Empty dict if
+            profiling failed or timed out.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_path = Path(tmpdir) / "profile.stats"
+            command = [sys.executable, "-m", "cProfile", "-o", str(stats_path)] + entry_point
+
+            try:
+                subprocess.run(
+                    command,
+                    cwd=repo_path,
+                    timeout=self.timeout_seconds,
+                    capture_output=True,
+                )
+            except (subprocess.TimeoutExpired, OSError):
+                return {}
+
+            if not stats_path.exists():
+                return {}
+
+            return self._load_stats(stats_path)
+
+    def _load_stats(self, stats_path: Path) -> Dict[str, float]:
+        stats = pstats.Stats(str(stats_path))
+
+        timings = {}
+        for func_key, raw_stats in stats.stats.items():
+            file_path, _line_number, func_name = func_key
+            cumulative_time = raw_stats[3]  # (cc, nc, tt, ct)
+            timings[f"{file_path}:{func_name}"] = cumulative_time
+
+        return timings
+
+
+def merge_profiling_results(
+    hotspots: List[HotspotFunction], timings: Dict[str, float]
+) -> List[HotspotFunction]:
+    """Attach real profiled timings to statically-detected hotspots by function name."""
+    for hotspot in hotspots:
+        matches = [
+            seconds for key, seconds in timings.items()
+            if key.endswith(f":{hotspot.function_name}")
+        ]
+        if matches:
+            hotspot.measured_time_seconds = max(matches)
+
+    return hotspots
