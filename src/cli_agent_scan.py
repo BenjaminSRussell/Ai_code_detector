@@ -1,5 +1,6 @@
 """Command-line interface for the agent-prep scanner."""
 
+import sys
 from pathlib import Path
 import click
 
@@ -35,7 +36,12 @@ def main(source: str, config: Path, output: Path, profile: bool, quiet: bool):
     SOURCE can be a GitHub URL or a local path.
     """
     scanner = AgentPrepScanner(config_path=config, enable_profiling=profile)
-    findings = scanner.scan(source, verbose=not quiet)
+
+    try:
+        findings = scanner.scan(source, verbose=not quiet)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
 
     output_dir = output if output else Path(findings.repo_path)
     output_dir.mkdir(parents=True, exist_ok=True)

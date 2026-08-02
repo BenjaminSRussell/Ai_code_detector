@@ -45,3 +45,18 @@ def test_cli_respects_output_directory_override(tmp_path):
     assert result.exit_code == 0
     assert (output_dir / 'AI_SCAN_FINDINGS.md').exists()
     assert not (repo_dir / 'AI_SCAN_FINDINGS.md').exists()
+
+
+def test_cli_handles_nonexistent_path_gracefully(tmp_path):
+    missing_path = tmp_path / "does_not_exist"
+
+    runner = CliRunner()
+    result = runner.invoke(main, [str(missing_path), '--quiet'])
+
+    assert result.exit_code != 0
+    assert "Error:" in result.output
+    # A raw, uncaught traceback would surface as some exception other than the
+    # SystemExit(1) that our own `sys.exit(1)` raises after printing a clean
+    # "Error:" message — anything else here means the exception escaped the
+    # try/except and wasn't handled cleanly.
+    assert isinstance(result.exception, SystemExit)

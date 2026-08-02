@@ -6,7 +6,7 @@ ScanFindings object for the report writers to render.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from detector import AICodeDetector
 from ingest.git_loader import GitLoader
@@ -29,6 +29,11 @@ class AgentPrepScanner:
 
     def __init__(self, config_path: Optional[Path] = None, enable_profiling: bool = False):
         self.enable_profiling = enable_profiling
+
+        if config_path is None:
+            packaged_default = Path(__file__).parent.parent / "configs" / "default.yaml"
+            if packaged_default.exists():
+                config_path = packaged_default
 
         self.detector = AICodeDetector(config_path=config_path)
         self.git_loader = GitLoader()
@@ -84,7 +89,14 @@ class AgentPrepScanner:
             entry_point = profiler.detect_entry_point(repo_info.path)
             if entry_point:
                 timings = profiler.profile(repo_info.path, entry_point)
+                if not timings and verbose:
+                    print(
+                        "Profiling produced no results (timeout, error, or no "
+                        "matching functions were found)."
+                    )
                 performance_hotspots = merge_profiling_results(performance_hotspots, timings)
+            elif verbose:
+                print("No tests/ directory found — skipping dynamic profiling.")
 
         findings = []
         findings.extend(self._build_attribution_findings(attribution_features))
@@ -114,9 +126,20 @@ class AgentPrepScanner:
         return findings
 
     def _build_duplication_findings(self, features: RepoDuplicationFeatures) -> List[Finding]:
-        findings = []
+        # Overlapping n-gram windows over the same duplicated region each produce
+        # their own DuplicateBlock. Group blocks by the set of files they hit so
+        # a single genuine duplication collapses into one finding instead of one
+        # per overlapping window.
+        grouped: Dict[Tuple[str, ...], List[Tuple[str, int]]] = {}
         for block in features.duplicate_blocks:
-            files_hit = sorted({loc[0] for loc in block.locations})
+            files_hit = tuple(sorted({loc[0] for loc in block.locations}))
+            merged_locations = grouped.setdefault(files_hit, [])
+            for loc in block.locations:
+                if loc not in merged_locations:
+                    merged_locations.append(loc)
+
+        findings = []
+        for files_hit, locations in grouped.items():
             findings.append(Finding(
                 type="duplication",
                 file=files_hit[0],
@@ -125,7 +148,7 @@ class AgentPrepScanner:
                     f"Code block duplicated across {len(files_hit)} files: "
                     f"{', '.join(files_hit)}"
                 ),
-                evidence={"locations": [list(loc) for loc in block.locations]},
+                evidence={"locations": [list(loc) for loc in locations]},
             ))
         return findings
 

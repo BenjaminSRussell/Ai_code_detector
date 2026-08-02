@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 from model.findings import ScanFindings
+from report.reporter_markdown import MarkdownReporter
 
 SEVERITY_ORDER = {"high": 0, "warning": 1, "info": 2}
 
@@ -17,6 +18,19 @@ class FindingsMarkdownWriter:
         lines.append("")
         lines.append(f"**Repository:** `{findings.repo_path}`")
         lines.append(f"**AI Probability:** {findings.ai_probability * 100:.1f}%")
+
+        verdict = MarkdownReporter()._get_verdict(findings.ai_probability)
+        lines.append(f"**Verdict:** {verdict}")
+
+        if findings.by_type("ai_attribution"):
+            lines.append("")
+            lines.append(
+                "**Note:** The findings below include direct evidence of AI-tool "
+                "attribution (explicit commit trailers), which is independent of "
+                "and not included in the AI Probability score above (that score "
+                "is based on heuristic code-pattern analysis only)."
+            )
+
         lines.append("")
 
         if not findings.findings:

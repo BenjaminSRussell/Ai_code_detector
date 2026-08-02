@@ -15,19 +15,19 @@ def _sample_findings():
         ai_probability=0.72,
         findings=[
             Finding(
-                type="ai_attribution",
-                file="src/app.py",
-                severity="high",
-                description="Commit message contains a Claude Code attribution trailer.",
-                evidence={"commit_sha": "abc123"},
-            ),
-            Finding(
                 type="performance_hotspot",
                 file="src/slow.py",
                 line=42,
                 function="matrix_multiply",
                 severity="warning",
                 description="Nested loops 2 levels deep suggest O(n^2) behavior.",
+            ),
+            Finding(
+                type="ai_attribution",
+                file="src/app.py",
+                severity="high",
+                description="Commit message contains a Claude Code attribution trailer.",
+                evidence={"commit_sha": "abc123"},
             ),
         ],
     )
@@ -64,6 +64,47 @@ def test_markdown_writer_handles_no_findings():
     assert "No findings." in report
 
 
+def test_markdown_writer_includes_verdict_for_known_probability():
+    writer = FindingsMarkdownWriter()
+
+    report = writer.generate(_sample_findings())
+
+    # 0.72 falls in the >=0.6 band per MarkdownReporter._get_verdict.
+    assert "**Verdict:** Likely AI-generated" in report
+
+
+def test_markdown_writer_includes_attribution_note_when_attribution_present():
+    writer = FindingsMarkdownWriter()
+
+    report = writer.generate(_sample_findings())
+
+    assert "independent of and not included in the AI Probability score" in report
+
+
+def test_markdown_writer_omits_attribution_note_when_no_attribution_findings():
+    writer = FindingsMarkdownWriter()
+    findings = ScanFindings(
+        repo_path="/tmp/example",
+        ai_probability=0.72,
+        findings=[
+            Finding(
+                type="performance_hotspot",
+                file="src/slow.py",
+                line=42,
+                function="matrix_multiply",
+                severity="warning",
+                description="Nested loops 2 levels deep suggest O(n^2) behavior.",
+            ),
+        ],
+    )
+
+    report = writer.generate(findings)
+
+    assert "independent of and not included in the AI Probability score" not in report
+    # Verdict should still be present regardless of attribution findings.
+    assert "**Verdict:**" in report
+
+
 def test_json_writer_produces_valid_json_with_all_fields(tmp_path):
     writer = FindingsJSONWriter()
     output_path = tmp_path / "ai_scan_findings.json"
@@ -73,6 +114,6 @@ def test_json_writer_produces_valid_json_with_all_fields(tmp_path):
 
     assert payload["repo_path"] == "/tmp/example"
     assert len(payload["findings"]) == 2
-    assert payload["findings"][0]["type"] == "ai_attribution"
-    assert payload["findings"][1]["line"] == 42
+    assert payload["findings"][0]["line"] == 42
+    assert payload["findings"][1]["type"] == "ai_attribution"
     assert output_path.exists()

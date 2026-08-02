@@ -219,7 +219,10 @@ class PerformanceProfiler:
             if not stats_path.exists():
                 return {}
 
-            return self._load_stats(stats_path)
+            try:
+                return self._load_stats(stats_path)
+            except Exception:
+                return {}
 
     def _load_stats(self, stats_path: Path) -> Dict[str, float]:
         stats = pstats.Stats(str(stats_path))
