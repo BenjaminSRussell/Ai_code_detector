@@ -129,3 +129,20 @@ def test_still_matches_real_claude_code_trailer():
 
     assert features.has_ai_attribution is True
     assert len(features.matches) == 1
+
+
+def test_matches_claude_with_model_name():
+    """Regression test: Claude Code trailers with model names (e.g., Claude Sonnet 5) should match.
+
+    This is the actual format used in the repo's own commit history.
+    """
+    analyzer = AttributionAnalyzer()
+    repo_info = _make_repo_info([
+        "Add feature\n\nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>",
+    ])
+
+    features = analyzer.analyze_repo(repo_info)
+
+    assert features.has_ai_attribution is True
+    assert len(features.matches) == 1
+    assert features.matches[0].commit_sha == "sha0"

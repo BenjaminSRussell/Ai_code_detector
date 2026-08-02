@@ -27,7 +27,7 @@ class AttributionAnalyzer:
     """Scans commit messages for known AI coding-tool attribution markers."""
 
     DEFAULT_PATTERNS = [
-        r"Co-Authored-By:\s*Claude\s*<[^>]*anthropic\.com>",
+        r"Co-Authored-By:.*<[^>]*@anthropic\.com>",
         r"Co-Authored-By:\s*.*[Cc]opilot",
         r"Co-Authored-By:\s*.*[Cc]ursor",
         r"Co-Authored-By:\s*.*[Cc]odex",
