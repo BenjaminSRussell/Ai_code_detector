@@ -19,6 +19,8 @@ Tables:
   verdicts  the repo verdict, plus a verdict for each file at or above the
             file threshold, with the natural-language explanation when
             there is one
+  file_cache  (v2, #8) per-file results keyed by content sha256 + analysis
+            key, used by ``aicd scan --incremental``
 """
 from __future__ import annotations
 
@@ -31,7 +33,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 DEFAULT_STORE = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache")) / "ai_code_detector" / "scans.db"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _SCHEMA_V1 = """
 CREATE TABLE IF NOT EXISTS scans (
@@ -95,8 +97,22 @@ CREATE TABLE IF NOT EXISTS verdicts (
 CREATE INDEX IF NOT EXISTS idx_verdicts_scan ON verdicts(scan_id);
 """
 
+# v2 (#8): incremental-scan cache. One row per (file content, analysis key);
+# the key covers detector version, config fingerprint, phases and model, so
+# any of those changing is a cache miss.
+_SCHEMA_V2 = """
+CREATE TABLE IF NOT EXISTS file_cache (
+    content_sha256 TEXT NOT NULL,
+    analysis_key   TEXT NOT NULL,
+    result         TEXT NOT NULL,   -- JSON FileScore (minus file_path)
+    hits           INTEGER NOT NULL DEFAULT 0,
+    updated_at     TEXT NOT NULL,
+    PRIMARY KEY (content_sha256, analysis_key)
+);
+"""
+
 # version -> SQL that upgrades (version - 1) -> version. Append; never edit.
-_MIGRATIONS = {1: _SCHEMA_V1}
+_MIGRATIONS = {1: _SCHEMA_V1, 2: _SCHEMA_V2}
 
 
 def verdict(p: float) -> str:
@@ -204,6 +220,29 @@ class ScanStore:
                            VALUES (?,?,?,?,?,?,?)""",
                         (scan_id, file_id, "file", verdict(prob), prob, file_threshold, explanation))
         return scan_id
+
+    # ---- incremental cache (#8) ----------------------------------------------
+
+    def cache_get(self, content_sha256: str, analysis_key: str) -> Optional[Dict[str, Any]]:
+        r = self.conn.execute("SELECT result FROM file_cache WHERE content_sha256 = ? AND analysis_key = ?",
+                              (content_sha256, analysis_key)).fetchone()
+        if r is None:
+            return None
+        with self.conn:
+            self.conn.execute("UPDATE file_cache SET hits = hits + 1 WHERE content_sha256 = ? AND analysis_key = ?",
+                              (content_sha256, analysis_key))
+        return json.loads(r[0])
+
+    def cache_put(self, content_sha256: str, analysis_key: str, result: Dict[str, Any]) -> None:
+        with self.conn:
+            self.conn.execute(
+                """INSERT INTO file_cache (content_sha256, analysis_key, result, updated_at) VALUES (?,?,?,?)
+                   ON CONFLICT(content_sha256, analysis_key) DO UPDATE SET result = excluded.result,
+                   updated_at = excluded.updated_at""",
+                (content_sha256, analysis_key, json.dumps(result, default=str), _now()))
+
+    def cache_count(self) -> int:
+        return self.conn.execute("SELECT COUNT(*) FROM file_cache").fetchone()[0]
 
     # ---- read -----------------------------------------------------------
 

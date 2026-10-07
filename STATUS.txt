@@ -346,7 +346,7 @@ KNOWN ISSUES AND LIMITATIONS
 4. Performance:
    - Not optimized for very large repositories (>10K files)
    - Git history analysis can be slow on old repos
-   - No incremental analysis (full re-scan required)
+   - [done #8] Incremental analysis: `aicd scan --incremental` (content-hash cache)
 
 5. Dependencies:
    - Requires GitPython (cannot analyze non-git directories fully)
@@ -365,7 +365,7 @@ Validation:
 
 Features:
   - [done #7] Tree-sitter backends for Python/JS/TS/Go/Rust (analysis.ast_backend)
-  - Incremental analysis (only changed files)
+  - [done #8] Incremental analysis (only changed files)
   - Pre-commit hook support
   - IDE integration plugins
 

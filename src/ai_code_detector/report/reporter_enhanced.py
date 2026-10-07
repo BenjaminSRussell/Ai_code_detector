@@ -36,6 +36,7 @@ class EnhancedJSONReporter:
                 "languages": repo_score.language_distribution,
             },
             "suppressed": getattr(repo_score, "suppressed", None) or {"count": 0},
+            "cache": getattr(repo_score, "cache", None) or {"enabled": False},
             "top_suspicious_files": [],
             "file_details": [],
         }

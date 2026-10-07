@@ -1,6 +1,5 @@
 """Enhanced detector integrating heuristics, ML classifier, and explanations."""
 
-import hashlib
 from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -22,6 +21,7 @@ from .analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
 from .analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
 from .analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
 from .model.aggregator import HeuristicAggregator, FileScore, RepoScore
+from .cache import content_sha256
 
 # Phase 2 & 3 imports
 from .model.embedder_mlx import get_embedder, CodeEmbedder
@@ -96,6 +96,10 @@ class EnhancedAICodeDetector:
         )
 
         # Phase 2 components
+        self.embedder_backend = embedder_backend
+        self.explainer_backend = explainer_backend
+        self.ml_model_path = ml_model_path
+        self.cache = None  # FileCache, set by `aicd scan --incremental` (#8)
         self.use_ml = use_ml
         self.embedder = None
         self.ml_classifier = None
@@ -178,7 +182,7 @@ class EnhancedAICodeDetector:
 
         for file_info in iterator:
             try:
-                file_score = self._analyze_file_enhanced(file_info, repo_info.path)
+                file_score = self._analyze_or_reuse(file_info, repo_info.path)
                 file_scores.append(file_score)
                 total_lines += file_info.line_count
             except Exception as e:
@@ -218,7 +222,30 @@ class EnhancedAICodeDetector:
                 print("  (Includes natural language explanations)")
 
         repo_score.suppressed = self.file_filter.last_suppressed.to_dict()
+        if self.cache is not None:
+            repo_score.cache = self.cache.stats()
+            if verbose:
+                print(f"Incremental: {self.cache.cached} from cache, {len(self.cache.recomputed)} recomputed")
         return repo_score
+
+    def _analyze_or_reuse(self, file_info: FileInfo, repo_root: Path) -> FileScore:
+        """#8: reuse a cached FileScore when this exact content was analyzed under the same key."""
+        if self.cache is None:
+            return self._analyze_file_enhanced(file_info, repo_root)
+        from .cache import content_sha256, score_from_dict
+        try:
+            code = file_info.path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return self._analyze_file_enhanced(file_info, repo_root)
+        sha = content_sha256(code)
+        hit = self.cache.get(sha)
+        if hit is not None:
+            self.cache.cached += 1
+            return score_from_dict(hit, str(file_info.relative_path), sha)
+        file_score = self._analyze_file_enhanced(file_info, repo_root)
+        self.cache.recomputed.append(str(file_info.relative_path))
+        self.cache.put(sha, file_score)
+        return file_score
 
     def _analyze_file_enhanced(self, file_info: FileInfo, repo_root: Path) -> FileScore:
         """Analyze file with enhanced features (Phase 2 & 3).
@@ -303,7 +330,7 @@ class EnhancedAICodeDetector:
         file_score.file_path = str(file_info.relative_path)
         # #6: provenance for the scan store (content hash, raw feature values)
         file_score.language = file_info.language
-        file_score.content_sha256 = hashlib.sha256(code.encode("utf-8", "surrogatepass")).hexdigest()
+        file_score.content_sha256 = content_sha256(code)
         file_score.features = {"stylometry": asdict(stylometry_features),
                                "structural": asdict(structural_features)}
         file_score.ml_used = bool(self.use_ml and self.embedder and self.ml_classifier)
