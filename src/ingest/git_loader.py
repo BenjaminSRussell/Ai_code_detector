@@ -1,6 +1,7 @@
 """Git repository loader with commit history analysis."""
 
 import os
+import hashlib
 import tempfile
 from pathlib import Path
 from typing import Optional, Dict, List
@@ -89,21 +90,30 @@ class GitLoader:
         Returns:
             Path to cloned repository
         """
-        # Extract repo name from URL
-        repo_name = url.rstrip("/").split("/")[-1]
-        if repo_name.endswith(".git"):
-            repo_name = repo_name[:-4]
-
-        target_path = self.cache_dir / repo_name
+        # Cache by owner/repo (or URL hash) to avoid alice/utils vs bob/utils collisions (#15)
+        cleaned = url.rstrip("/").removesuffix(".git")
+        parts = cleaned.replace(":", "/").split("/")
+        owner = parts[-2] if len(parts) >= 2 else "unknown"
+        repo_name = parts[-1] if parts else "repo"
+        digest = hashlib.sha1(url.encode()).hexdigest()[:10]
+        target_path = self.cache_dir / f"{owner}__{repo_name}__{digest}"
 
         if target_path.exists():
             print(f"Repository already cloned at {target_path}")
             try:
                 repo = Repo(target_path)
+                origin_url = next(repo.remotes.origin.urls)
+                if origin_url.rstrip("/").removesuffix(".git") != cleaned:
+                    raise ValueError(
+                        f"Cache path {target_path} belongs to {origin_url}, not {url}"
+                    )
                 repo.remotes.origin.pull()
                 print("Updated existing repository")
             except Exception as e:
-                print(f"Warning: Could not update repo: {e}")
+                raise RuntimeError(
+                    f"Could not update cached repo at {target_path}: {e}. "
+                    "Delete the cache directory or pass a fresh cache_dir."
+                ) from e
         else:
             print(f"Cloning {url} to {target_path}")
             Repo.clone_from(url, target_path)
@@ -140,7 +150,7 @@ class GitLoader:
         authors_set = set()
 
         try:
-            for commit in repo.iter_commits():
+            for commit in repo.iter_commits(max_count=500):
                 author = commit.author.name
                 email = commit.author.email
                 authors_set.add(author)
@@ -152,7 +162,7 @@ class GitLoader:
 
                 try:
                     if commit.parents:
-                        diffs = commit.parents[0].diff(commit, create_patch=True)
+                        diffs = commit.parents[0].diff(commit, create_patch=False)
                         for diff in diffs:
                             if diff.a_path:
                                 files_changed.append(diff.a_path)
