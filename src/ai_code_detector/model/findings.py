@@ -22,6 +22,7 @@ class ScanFindings:
     repo_path: str
     ai_probability: float
     findings: List[Finding] = field(default_factory=list)
+    suppressed: Dict[str, Any] = field(default_factory=dict)
 
     def by_type(self, finding_type: str) -> List[Finding]:
         return [f for f in self.findings if f.type == finding_type]

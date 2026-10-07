@@ -46,6 +46,7 @@ class JSONReporter:
                 "total_lines": repo_score.total_lines_analyzed,
                 "languages": repo_score.language_distribution,
             },
+            "suppressed": getattr(repo_score, "suppressed", None) or {"count": 0},
             "top_suspicious_files": [],
             "file_details": [],
         }

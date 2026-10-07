@@ -119,6 +119,49 @@ scoring:
     history: 0.2
 ```
 
+## Suppressions (`.aicdignore`)
+
+Vendored, generated, or third-party code drowns out real signal. List it in a `.aicdignore` file at the repo root. Every scan picks it up automatically: `aicd scan`, `aicd agent-scan`, and the legacy commands.
+
+```gitignore
+# pattern                 # rationale (shown in reports)
+third_party/              # vendored deps, reviewed upstream
+**/*_pb2.py               # protoc output
+build/generated/*.rs      # codegen
+!build/generated/keep.rs  # re-include a hand-written file (last match wins)
+```
+
+- Syntax is gitignore-like. A pattern containing `/` is anchored at the repo root; otherwise it matches a file or directory name at any depth. A trailing `/` matches directories only. `*` and `?` stay within one path segment, `**` crosses segments, and `!` re-includes.
+- Suppressed files are **not analyzed**. They don't count toward the repository score, the `scan` exit code (the fail gate), top-suspicious files, or agent-scan findings.
+- Every JSON report carries the omission, so nothing disappears silently:
+
+  ```json
+  "suppressed": {
+    "count": 2,
+    "source": "/repo/.aicdignore",
+    "rules": [{"pattern": "third_party/", "rationale": "vendored deps", "count": 1}],
+    "paths": ["api_pb2.py", "third_party/lib/vendored.py"],
+    "paths_truncated": false
+  }
+  ```
+
+  Markdown reports show a "Suppressed" line when the count is non-zero.
+- `--suppressions FILE` uses a different file, for example a stricter CI-only list. `--no-suppressions` scans everything.
+- Repository-level git-history signals still cover the whole repo.
+
+CI example (fails only on high AI probability; suppressed paths never trip the gate):
+
+```yaml
+- run: pip install git+https://github.com/BenjaminSRussell/Ai_code_detector.git
+- name: AI code gate
+  run: |
+    set +e
+    aicd scan . --mode basic -f json -o aicd-report -q
+    code=$?
+    echo "suppressed: $(jq '.suppressed.count' aicd-report/ai_detection_report_enhanced.json)"
+    [ "$code" -lt 2 ]   # 0 low, 1 moderate -> pass; 2 high -> fail
+```
+
 ## Project Structure
 
 ```

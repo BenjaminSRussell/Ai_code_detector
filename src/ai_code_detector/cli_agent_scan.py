@@ -26,16 +26,28 @@ from .report.reporter_findings import FindingsMarkdownWriter, FindingsJSONWriter
     help='Also run an opt-in dynamic profiling pass (executes code from the scanned repo)'
 )
 @click.option(
+    '--suppressions',
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help='Suppressions file (default: <repo>/.aicdignore when present)'
+)
+@click.option(
+    '--no-suppressions',
+    is_flag=True,
+    help='Ignore .aicdignore and scan every file'
+)
+@click.option(
     '--quiet', '-q',
     is_flag=True,
     help='Suppress progress output'
 )
-def main(source: str, config: Path, output: Path, profile: bool, quiet: bool):
+def main(source: str, config: Path, output: Path, profile: bool, suppressions: Path, no_suppressions: bool, quiet: bool):
     """Scan a repository and produce agent-readable findings.
 
     SOURCE can be a GitHub URL or a local path.
     """
     scanner = AgentPrepScanner(config_path=config, enable_profiling=profile)
+    scanner.file_filter.suppressions_file = suppressions
+    scanner.file_filter.use_suppressions = not no_suppressions
 
     try:
         findings = scanner.scan(source, verbose=not quiet)

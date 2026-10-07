@@ -35,6 +35,7 @@ class EnhancedJSONReporter:
                 "total_lines": repo_score.total_lines_analyzed,
                 "languages": repo_score.language_distribution,
             },
+            "suppressed": getattr(repo_score, "suppressed", None) or {"count": 0},
             "top_suspicious_files": [],
             "file_details": [],
         }
@@ -145,6 +146,9 @@ class EnhancedMarkdownReporter:
         lines.append("## Repository Statistics")
         lines.append("")
         lines.append(f"- **Files Analyzed:** {repo_score.total_files_analyzed}")
+        _supp = getattr(repo_score, "suppressed", None) or {}
+        if _supp.get("count"):
+            lines.append(f"- **Suppressed (`.aicdignore`):** {_supp['count']} files (excluded from scores)")
         lines.append(f"- **Lines of Code:** {repo_score.total_lines_analyzed:,}")
         lines.append("")
 

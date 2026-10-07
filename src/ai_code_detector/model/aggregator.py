@@ -1,7 +1,7 @@
 """Feature aggregation and scoring for AI detection."""
 
 from typing import Dict, List, Tuple
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 
 from ..analysis.metrics_stylometry import StylometricFeatures
@@ -41,6 +41,9 @@ class RepoScore:
     total_files_analyzed: int
     total_lines_analyzed: int
     language_distribution: Dict[str, int]
+
+    # `.aicdignore` summary (SuppressionSummary.to_dict()); empty when unused
+    suppressed: Dict = field(default_factory=dict)
 
 
 class HeuristicAggregator:
