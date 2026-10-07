@@ -45,6 +45,16 @@ from .report.reporter_html import HTMLReporter
     help=f'Append this run to a SQLite history (bare --store = {DEFAULT_STORE})'
 )
 @click.option(
+    '--incremental',
+    is_flag=True,
+    help='Reuse results for files whose content, config and detector are unchanged (cache in the --store DB)'
+)
+@click.option(
+    '--force-full',
+    is_flag=True,
+    help='With --incremental: recompute every file and refresh the cache'
+)
+@click.option(
     '--html', 'html_path',
     type=click.Path(dir_okay=False, path_type=Path),
     help='Also write a self-contained HTML viewer (sortable file table, threshold slider, feature bars)'
@@ -106,6 +116,8 @@ def main(
     format: str,
     sarif_min_probability: float,
     store: Path,
+    incremental: bool,
+    force_full: bool,
     html_path: Path,
     html_threshold: float,
     mode: str,
@@ -169,6 +181,20 @@ def main(
         explainer_backend=explainer,
     )
     detector.file_filter.suppressions_file = suppressions
+    cache_db = None
+    if force_full and not incremental:
+        raise click.UsageError('--force-full only makes sense with --incremental')
+    if incremental:
+        from .cache import FileCache, analysis_key
+        from .store import _detector_version, config_fingerprint
+        cache_db = ScanStore(store or DEFAULT_STORE)
+        detector.cache = FileCache(cache_db, analysis_key(
+            detector_version=_detector_version(),
+            config_fingerprint=config_fingerprint(detector.config),
+            use_ml=use_ml, use_explanations=use_explanations,
+            embedder=embedder, explainer=explainer,
+            ml_model_path=None, feature_dim=detector.FEATURE_DIM,
+        ), force_full=force_full)
     detector.file_filter.use_suppressions = not no_suppressions
 
     # Run analysis
@@ -182,6 +208,12 @@ def main(
         if not quiet:
             traceback.print_exc()
         sys.exit(1)
+
+    if cache_db is not None:
+        c = repo_score.cache if hasattr(repo_score, 'cache') else detector.cache.stats()
+        click.echo(f"Incremental: {c['recomputed']} recomputed, {c['cached']} from cache"
+                   f"{' (--force-full)' if force_full else ''} [{cache_db.path}]", err=True)
+        cache_db.close()
 
     # Generate reports
     if not quiet:

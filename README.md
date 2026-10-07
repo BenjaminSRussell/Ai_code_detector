@@ -232,6 +232,24 @@ This writes **one self-contained file**: inline CSS and JS, with the scan data e
 
 Feature shares come from `FileScore.feature_contributions`, an additive breakdown of the heuristic score, so the shares sum to the probability. In enhanced mode the heuristic terms are scaled by 0.4 and the classifier appears as a single `ml_classifier` term (0.6 × p). JSON reports also carry `top_features` for each file. Every number in the viewer comes from the scan, and an empty scan shows an empty state.
 
+## Incremental scans
+
+```bash
+aicd scan ./repo --incremental                    # cache in ~/.cache/ai_code_detector/scans.db
+aicd scan ./repo --incremental --store scans.db   # cache (and history) in a DB you choose
+aicd scan ./repo --incremental --force-full       # recompute everything and refresh the cache
+```
+
+Each eligible file is hashed (SHA-256 of its content). If that content was already analyzed under the same **analysis key**, the stored result is reused. The key covers:
+- the detector version
+- the config fingerprint (weights, thresholds, feature settings)
+- the ML and explanation phases, and the embedder and explainer backends
+- the model file's hash
+
+Changing any of these is a cache miss, and the old entries stay valid for the old key. Renamed or copied files are cache hits.
+
+Every incremental run logs `Incremental: N recomputed, M from cache` to stderr. The JSON report's `cache` block lists the counts and `recomputed_paths`. The cache lives in the `file_cache` table (store schema v2), next to the scan history.
+
 ## SARIF export (GitHub code scanning)
 
 ```bash
