@@ -66,3 +66,23 @@ jobs:
           path: |
             /tmp/sarif_out/ai_detection_report.sarif
             /tmp/sarif_out/ai_scan_findings.sarif
+
+  eval-harness:
+    # #11: labeled eval on the tiny fixture set (datasets/manifest.yaml), <30s.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e .
+      - name: Eval harness (basic + trained-on-train-split)
+        run: |
+          python scripts/eval_harness.py --manifest datasets/manifest.yaml --train --min-auc 0.5 --out reports/eval
+          cat reports/eval/summary.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: aicd-eval
+          path: reports/eval/

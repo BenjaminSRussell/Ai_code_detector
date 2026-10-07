@@ -1,0 +1,30 @@
+# Labeled human-vs-AI evaluation set (#11).
+#
+# Entries: `path` (one file) or `glob` (many), resolved relative to this file.
+#   label: human | ai     (or 0 | 1)
+#   split: train | test   (optional; otherwise assigned deterministically
+#                          from a hash of the path using `test_fraction`)
+#   source: free text, e.g. provenance / repo@sha
+#
+# THIS SET IS A TINY, SYNTHETIC SMOKE FIXTURE. The `ai` files were written
+# to imitate common LLM output style, and the `human` files are terse
+# hand-written utilities. It exercises the harness in CI (<30s). It is NOT
+# a benchmark, and its numbers say nothing about real-world accuracy. For a
+# real evaluation, write your own manifest that points `glob` entries at
+# checked-out repos with known provenance (see README "Evaluation").
+version: 1
+name: fixture-tiny
+test_fraction: 0.4
+entries:
+  - {path: fixtures/human/lru.py, label: human, split: train, source: hand-written}
+  - {path: fixtures/human/semver.py, label: human, split: train, source: hand-written}
+  - {path: fixtures/human/tail.py, label: human, split: train, source: hand-written}
+  - {path: ../examples/sample_human_code.py, label: human, split: train, source: examples/}
+  - {path: fixtures/human/csvsum.py, label: human, split: test, source: hand-written}
+  - {path: fixtures/human/retry.py, label: human, split: test, source: hand-written}
+  - {path: fixtures/ai/user_manager.py, label: ai, split: train, source: synthetic LLM-style}
+  - {path: fixtures/ai/file_processor.py, label: ai, split: train, source: synthetic LLM-style}
+  - {path: fixtures/ai/calculator.py, label: ai, split: train, source: synthetic LLM-style}
+  - {path: ../examples/sample_ai_code.py, label: ai, split: train, source: examples/}
+  - {path: fixtures/ai/config_loader.py, label: ai, split: test, source: synthetic LLM-style}
+  - {path: fixtures/ai/data_validator.py, label: ai, split: test, source: synthetic LLM-style}

@@ -5,6 +5,7 @@
     aicd explain FILE ...                           score + explanation for one file
     aicd train DATASET.jsonl -o model.json          fit the Phase 2 classifier
     aicd gate FILES... [--threshold 0.7]            fail if any file is above threshold (PR/pre-commit)
+    aicd eval --manifest datasets/manifest.yaml     ROC AUC / calibration on a labeled set
 
 ``scan`` is the former ``ai-code-detector-enhanced`` command, with the same
 options, outputs, and exit codes. ``agent-scan`` is the former
@@ -24,7 +25,7 @@ from . import cli as _cli_basic
 from . import cli_agent_scan as _cli_agent_scan
 from . import cli_enhanced as _cli_enhanced
 
-SUBCOMMANDS = ("scan", "agent-scan", "explain", "train", "gate")
+SUBCOMMANDS = ("scan", "agent-scan", "explain", "train", "gate", "eval")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -37,8 +38,10 @@ main.add_command(_cli_enhanced.main, name="scan")
 main.add_command(_cli_agent_scan.main, name="agent-scan")
 
 from .gate import gate as _gate  # noqa: E402
+from .evaluation import main as _eval  # noqa: E402
 
 main.add_command(_gate, name="gate")
+main.add_command(_eval, name="eval")
 
 
 def _file_info(path: Path):
@@ -103,6 +106,7 @@ def train(dataset: Path, output: Path, epochs: int, learning_rate: float, config
     ``aicd explain --model``.
     """
     from .detector_enhanced import EnhancedAICodeDetector
+    from .evaluation import featurize
     from .model.classifier import MLClassifier
 
     det = EnhancedAICodeDetector(config_path=config, use_ml=True, use_explanations=False)
@@ -122,20 +126,9 @@ def train(dataset: Path, output: Path, epochs: int, learning_rate: float, config
             path = dataset.parent / path
         if not path.is_file():
             raise click.BadParameter(f"line {lineno}: no such file {path}", param_hint="DATASET")
-        info = _file_info(path)
-        code = path.read_text(encoding="utf-8", errors="ignore")
-        parser_ast = None
-        from .analysis.ast_parser import ASTParserFactory
-        parser = ASTParserFactory.get_parser(info.language)
-        if parser:
-            try:
-                parser_ast = parser.parse_file(path, code)
-            except Exception:
-                parser_ast = None
-        sty = det.stylometry_analyzer.analyze_file(code, info.language, parser_ast)
-        struct = det.structural_analyzer.analyze_file(code, info.language, parser_ast)
-        embeddings.append(list(det.embedder.embed(code)))
-        features.append(det._features_to_vector(sty, struct))
+        emb, feat = featurize(det, path)
+        embeddings.append(emb)
+        features.append(feat)
         labels.append(label)
     if len(set(labels)) < 2:
         raise click.UsageError("dataset needs at least one example of each label (0 and 1)")

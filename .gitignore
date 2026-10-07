@@ -74,3 +74,6 @@ checkpoints/
 
 # Worktrees
 .worktrees/
+
+# Eval harness output (#11)
+reports/
