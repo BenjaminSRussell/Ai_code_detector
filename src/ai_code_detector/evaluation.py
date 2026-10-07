@@ -181,7 +181,7 @@ def featurize(det, path: Path):
     info = _file_info(path)
     code = path.read_text(encoding="utf-8", errors="ignore")
     tree = None
-    parser = ASTParserFactory.get_parser(info.language)
+    parser = ASTParserFactory.get_parser(info.language, getattr(det, "ast_backend", "python"))
     if parser:
         try:
             tree = parser.parse_file(path, code)

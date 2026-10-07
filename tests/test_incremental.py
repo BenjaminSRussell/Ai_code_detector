@@ -108,7 +108,9 @@ def test_analysis_key_covers_detector_config_phases_and_model(tmp_path):
     for change in ({"detector_version": "0.4.0"}, {"config_fingerprint": "abd"}, {"use_ml": False},
                    {"use_explanations": True}, {"embedder": "mlx"}, {"feature_dim": 24}):
         assert analysis_key(**{**base, **change}) != k, change
-    assert analysis_key(**{**base, "explainer": "qwen"}) == k  # explainer irrelevant when explanations are off
+    assert analysis_key(**{**base, "explainer": "qwen"}) == k
+    assert analysis_key(**base, parsers={"backend": "auto", "go": True}) != \
+        analysis_key(**base, parsers={"backend": "auto", "go": False})  # grammar install changes results  # explainer irrelevant when explanations are off
     m = tmp_path / "m.json"
     m.write_text("{}")
     k1 = analysis_key(**base, ml_model_path=m)

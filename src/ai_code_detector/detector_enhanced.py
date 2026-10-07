@@ -16,7 +16,7 @@ except ImportError:
 from .ingest.git_loader import GitLoader, RepoInfo
 from .ingest.file_filter import FileFilter, FileInfo
 from .analysis.tokenizer import CodeTokenizer
-from .analysis.ast_parser import ASTParserFactory, FileAST
+from .analysis.ast_parser import AST_BACKENDS, ASTParserFactory, FileAST
 from .analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
 from .analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
 from .analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
@@ -77,6 +77,11 @@ class EnhancedAICodeDetector:
         self.stylometry_analyzer = StylometryAnalyzer(
             config=self.config.get('features', {}).get('stylometry', {})
         )
+
+        # #7: python | tree_sitter | auto (see configs/default.yaml)
+        self.ast_backend = (self.config.get('analysis') or {}).get('ast_backend', 'auto')
+        if self.ast_backend not in AST_BACKENDS:
+            raise ValueError(f"analysis.ast_backend must be one of {AST_BACKENDS}, got {self.ast_backend!r}")
 
         self.structural_analyzer = StructuralAnalyzer(
             config=self.config.get('features', {}).get('structural', {})
@@ -261,7 +266,7 @@ class EnhancedAICodeDetector:
 
         # Parse AST
         file_ast = None
-        parser = ASTParserFactory.get_parser(file_info.language)
+        parser = ASTParserFactory.get_parser(file_info.language, self.ast_backend)
         if parser:
             try:
                 file_ast = parser.parse_file(file_info.path, code)
@@ -406,6 +411,7 @@ class EnhancedAICodeDetector:
     def _default_config(self) -> Dict:
         """Get default configuration."""
         return {
+            'analysis': {'ast_backend': 'auto'},
             'ingestion': {
                 'supported_extensions': ['.py', '.js', '.ts', '.go', '.rs'],
                 'excluded_dirs': ['node_modules', 'dist', 'build', '.git', '__pycache__', 'venv'],

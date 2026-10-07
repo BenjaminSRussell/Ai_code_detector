@@ -19,6 +19,9 @@ class FunctionInfo:
     is_async: bool
     cyclomatic_complexity: int
     code: str
+    # Set by tree-sitter backends from the syntax tree (#7); None = unknown,
+    # StructuralAnalyzer then falls back to its text heuristic.
+    unreachable: Optional[bool] = None
 
 
 @dataclass
@@ -213,22 +216,34 @@ class PythonASTParser:
         return complexity
 
 
+AST_BACKENDS = ("python", "tree_sitter", "auto")
+
+
 class ASTParserFactory:
-    """Factory for creating language-specific AST parsers."""
+    """Factory for creating language-specific AST parsers.
+
+    Backends (``analysis.ast_backend`` in the config, #7):
+      python       builtin ``ast`` for Python only (other languages: regex fallback)
+      tree_sitter  tree-sitter for every supported language, including Python
+      auto         builtin ``ast`` for Python, tree-sitter for JS/TS/Go/Rust when
+                   the grammars are installed, regex fallback otherwise
+    """
+
+    _cache: Dict[str, Any] = {}
 
     @staticmethod
-    def get_parser(language: str):
-        """Get parser for language.
-
-        Args:
-            language: Programming language name
-
-        Returns:
-            Parser instance or None if not supported
-        """
-        if language == "python":
+    def get_parser(language: str, backend: str = "python"):
+        """Return a parser for ``language`` or None (caller uses the regex path)."""
+        if backend not in AST_BACKENDS:
+            raise ValueError(f"analysis.ast_backend must be one of {AST_BACKENDS}, got {backend!r}")
+        if language == "python" and backend in ("python", "auto"):
             return PythonASTParser()
-        else:
-            # For Phase 1, only Python is supported
-            # Phase 2+ can add tree-sitter based parsers for other languages
+        if backend == "python":
             return None
+        from . import tree_sitter_parser as ts
+        if language not in ts.SPECS or not ts.available(language):
+            return PythonASTParser() if language == "python" else None
+        key = language
+        if key not in ASTParserFactory._cache:
+            ASTParserFactory._cache[key] = ts.TreeSitterParser(language)
+        return ASTParserFactory._cache[key]
