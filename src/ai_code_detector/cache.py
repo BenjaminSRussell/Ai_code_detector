@@ -44,14 +44,25 @@ def _file_sha(path: Optional[Path]) -> Optional[str]:
 
 def analysis_key(*, detector_version: str, config_fingerprint: str, use_ml: bool, use_explanations: bool,
                  embedder: str, explainer: str, ml_model_path: Optional[Path] = None,
-                 feature_dim: int = 0) -> str:
+                 feature_dim: int = 0, parsers: Optional[Dict[str, bool]] = None) -> str:
     material = {
         "detector_version": detector_version, "config": config_fingerprint, "use_ml": bool(use_ml),
         "use_explanations": bool(use_explanations), "embedder": embedder if use_ml else None,
         "explainer": explainer if use_explanations else None,
         "model": _file_sha(ml_model_path) if use_ml else None, "feature_dim": feature_dim,
+        # #7: under ast_backend=auto, installing/removing grammars changes results
+        "parsers": parsers or {},
     }
     return hashlib.sha256(json.dumps(material, sort_keys=True).encode()).hexdigest()[:24]
+
+
+def parser_fingerprint(ast_backend: str) -> Dict[str, bool]:
+    """Which tree-sitter grammars are usable, plus the configured backend (#7)."""
+    from .analysis import tree_sitter_parser as ts
+    out = {"backend": ast_backend}
+    if ast_backend != "python":
+        out.update({lang: ts.available(lang) for lang in sorted(ts.SPECS)})
+    return out
 
 
 def score_to_dict(fs: FileScore) -> Dict[str, Any]:

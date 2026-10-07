@@ -185,7 +185,7 @@ def main(
     if force_full and not incremental:
         raise click.UsageError('--force-full only makes sense with --incremental')
     if incremental:
-        from .cache import FileCache, analysis_key
+        from .cache import FileCache, analysis_key, parser_fingerprint
         from .store import _detector_version, config_fingerprint
         cache_db = ScanStore(store or DEFAULT_STORE)
         detector.cache = FileCache(cache_db, analysis_key(
@@ -194,6 +194,7 @@ def main(
             use_ml=use_ml, use_explanations=use_explanations,
             embedder=embedder, explainer=explainer,
             ml_model_path=None, feature_dim=detector.FEATURE_DIM,
+            parsers=parser_fingerprint(detector.ast_backend),
         ), force_full=force_full)
     detector.file_filter.use_suppressions = not no_suppressions
 
