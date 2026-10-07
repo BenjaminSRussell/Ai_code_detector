@@ -8,20 +8,20 @@ ScanFindings object for the report writers to render.
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from detector import AICodeDetector
-from ingest.git_loader import GitLoader
-from ingest.file_filter import FileFilter
-from analysis.ast_parser import ASTParserFactory
-from analysis.metrics_duplication import RepoDuplicationAnalyzer, RepoDuplicationFeatures
-from analysis.metrics_attribution import AttributionAnalyzer, AttributionFeatures
-from analysis.metrics_satd import SATDAnalyzer, SATDMarker
-from analysis.metrics_performance import (
+from .detector import AICodeDetector
+from .ingest.git_loader import GitLoader
+from .ingest.file_filter import FileFilter
+from .analysis.ast_parser import ASTParserFactory
+from .analysis.metrics_duplication import RepoDuplicationAnalyzer, RepoDuplicationFeatures
+from .analysis.metrics_attribution import AttributionAnalyzer, AttributionFeatures
+from .analysis.metrics_satd import SATDAnalyzer, SATDMarker
+from .analysis.metrics_performance import (
     PerformanceAnalyzer,
     PerformanceProfiler,
     HotspotFunction,
     merge_profiling_results,
 )
-from model.findings import Finding, ScanFindings
+from .model.findings import Finding, ScanFindings
 
 
 class AgentPrepScanner:
@@ -31,7 +31,7 @@ class AgentPrepScanner:
         self.enable_profiling = enable_profiling
 
         if config_path is None:
-            packaged_default = Path(__file__).parent.parent / "configs" / "default.yaml"
+            packaged_default = Path(__file__).parent / "configs" / "default.yaml"
             if packaged_default.exists():
                 config_path = packaged_default
 

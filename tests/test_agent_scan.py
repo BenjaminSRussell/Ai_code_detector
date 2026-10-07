@@ -3,11 +3,10 @@
 import sys
 import subprocess
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from agent_scan import AgentPrepScanner
-from analysis.metrics_duplication import RepoDuplicationAnalyzer
-import analysis.metrics_performance as metrics_performance
+from ai_code_detector.agent_scan import AgentPrepScanner
+from ai_code_detector.analysis.metrics_duplication import RepoDuplicationAnalyzer
+import ai_code_detector.analysis.metrics_performance as metrics_performance
 
 
 def _init_repo(repo_dir: Path):

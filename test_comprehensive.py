@@ -6,7 +6,6 @@ import tempfile
 import shutil
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 print("=" * 60)
 print("AI Code Detector - Comprehensive Test Suite")
@@ -17,7 +16,7 @@ print()
 print("Test 1: File Filter")
 print("-" * 60)
 
-from ingest.file_filter import FileFilter
+from ai_code_detector.ingest.file_filter import FileFilter
 
 file_filter = FileFilter(
     supported_extensions=['.py', '.js'],
@@ -53,7 +52,7 @@ print()
 print("Test 2: Code Tokenizer")
 print("-" * 60)
 
-from analysis.tokenizer import CodeTokenizer
+from ai_code_detector.analysis.tokenizer import CodeTokenizer
 
 tokenizer = CodeTokenizer()
 
@@ -81,7 +80,7 @@ print()
 print("Test 3: AST Parser")
 print("-" * 60)
 
-from analysis.ast_parser import PythonASTParser
+from ai_code_detector.analysis.ast_parser import PythonASTParser
 
 parser = PythonASTParser()
 
@@ -119,7 +118,7 @@ print()
 print("Test 4: Stylometry Analyzer")
 print("-" * 60)
 
-from analysis.metrics_stylometry import StylometryAnalyzer
+from ai_code_detector.analysis.metrics_stylometry import StylometryAnalyzer
 
 analyzer = StylometryAnalyzer()
 
@@ -157,7 +156,7 @@ print()
 print("Test 5: Structural Analyzer")
 print("-" * 60)
 
-from analysis.metrics_structural import StructuralAnalyzer
+from ai_code_detector.analysis.metrics_structural import StructuralAnalyzer
 
 structural_analyzer = StructuralAnalyzer()
 
@@ -202,9 +201,9 @@ print()
 print("Test 7: Heuristic Aggregator")
 print("-" * 60)
 
-from model.aggregator import HeuristicAggregator
-from analysis.metrics_stylometry import StylometricFeatures
-from analysis.metrics_structural import StructuralFeatures
+from ai_code_detector.model.aggregator import HeuristicAggregator
+from ai_code_detector.analysis.metrics_stylometry import StylometricFeatures
+from ai_code_detector.analysis.metrics_structural import StructuralFeatures
 
 aggregator = HeuristicAggregator()
 
@@ -254,9 +253,9 @@ print()
 print("Test 8: Report Generators")
 print("-" * 60)
 
-from report.reporter_json import JSONReporter
-from report.reporter_markdown import MarkdownReporter
-from model.aggregator import RepoScore
+from ai_code_detector.report.reporter_json import JSONReporter
+from ai_code_detector.report.reporter_markdown import MarkdownReporter
+from ai_code_detector.model.aggregator import RepoScore
 
 # Create mock repo score
 repo_score = RepoScore(
@@ -303,12 +302,12 @@ examples_dir = Path(__file__).parent / "examples"
 
 if examples_dir.exists() and (examples_dir / "sample_ai_code.py").exists():
     # Create a minimal detector without git dependency issues
-    from ingest.file_filter import FileFilter
-    from analysis.tokenizer import CodeTokenizer
-    from analysis.ast_parser import PythonASTParser
-    from analysis.metrics_stylometry import StylometryAnalyzer
-    from analysis.metrics_structural import StructuralAnalyzer
-    from model.aggregator import HeuristicAggregator
+    from ai_code_detector.ingest.file_filter import FileFilter
+    from ai_code_detector.analysis.tokenizer import CodeTokenizer
+    from ai_code_detector.analysis.ast_parser import PythonASTParser
+    from ai_code_detector.analysis.metrics_stylometry import StylometryAnalyzer
+    from ai_code_detector.analysis.metrics_structural import StructuralAnalyzer
+    from ai_code_detector.model.aggregator import HeuristicAggregator
 
     file_filter = FileFilter(
         supported_extensions=['.py'],

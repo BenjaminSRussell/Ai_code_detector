@@ -4,10 +4,9 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from analysis.tokenizer import CodeTokenizer
-from analysis.metrics_stylometry import StylometryAnalyzer
+from ai_code_detector.analysis.tokenizer import CodeTokenizer
+from ai_code_detector.analysis.metrics_stylometry import StylometryAnalyzer
 
 # Test 1: Tokenizer
 print("Test 1: Tokenizer")
@@ -60,9 +59,9 @@ print()
 print("Test 3: Aggregator")
 print("-" * 40)
 
-from model.aggregator import HeuristicAggregator
-from analysis.metrics_stylometry import StylometricFeatures
-from analysis.metrics_structural import StructuralFeatures
+from ai_code_detector.model.aggregator import HeuristicAggregator
+from ai_code_detector.analysis.metrics_stylometry import StylometricFeatures
+from ai_code_detector.analysis.metrics_structural import StructuralFeatures
 
 aggregator = HeuristicAggregator()
 

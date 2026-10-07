@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 
-from model.findings import ScanFindings
-from report.reporter_markdown import MarkdownReporter
+from ..model.findings import ScanFindings
+from ..report.reporter_markdown import MarkdownReporter
 
 SEVERITY_ORDER = {"high": 0, "warning": 1, "info": 2}
 

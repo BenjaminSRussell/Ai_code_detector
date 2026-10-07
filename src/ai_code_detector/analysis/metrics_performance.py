@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
 
-from analysis.ast_parser import FileAST, FunctionInfo
+from ..analysis.ast_parser import FileAST, FunctionInfo
 
 
 @dataclass
