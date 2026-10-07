@@ -39,9 +39,11 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "ai-code-detector=ai_code_detector.cli:main",
-            "ai-code-detector-enhanced=ai_code_detector.cli_enhanced:main",
-            "ai-code-detector-agent-scan=ai_code_detector.cli_agent_scan:main",
+            "aicd=ai_code_detector.aicd:main",
+            # Deprecated (one release): print a notice, then run the old command.
+            "ai-code-detector=ai_code_detector.aicd:legacy_basic",
+            "ai-code-detector-enhanced=ai_code_detector.aicd:legacy_enhanced",
+            "ai-code-detector-agent-scan=ai_code_detector.aicd:legacy_agent_scan",
         ],
     },
     python_requires=">=3.9",

@@ -32,10 +32,15 @@ jobs:
       - name: Console scripts resolve outside the checkout
         working-directory: /tmp
         run: |
+          aicd --help
+          aicd scan --help
+          python -m ai_code_detector --help
           ai-code-detector --help
           ai-code-detector-enhanced --help
           ai-code-detector-agent-scan --help
-          python -m ai_code_detector --help
           mkdir -p sample && printf 'def add(a, b):\n    return a + b\n' > sample/m.py
-          ai-code-detector-agent-scan sample -o out
+          aicd agent-scan sample -o out
           test -f out/ai_scan_findings.json
+          aicd scan sample --mode basic -q -f json -o scan_out
+          test -f scan_out/ai_detection_report_enhanced.json
+          aicd explain sample/m.py --json --no-ml
