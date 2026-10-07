@@ -18,6 +18,7 @@ class FileScore:
     structural_score: float
     feature_explanations: Dict[str, float]
     suspicious_snippets: List[Dict]
+    parse_failed: bool = False
 
 
 @dataclass
@@ -86,11 +87,15 @@ class HeuristicAggregator:
         stylometry_score = self._score_stylometry(stylometry)
         structural_score = self._score_structural(structural)
 
-        # Weighted combination
-        ai_probability = (
-            self.stylometry_weight * stylometry_score +
-            self.structural_weight * structural_score
-        )
+        # Weighted combination with renormalized weights so a maxed file can reach 1.0 (#17)
+        weight_sum = self.stylometry_weight + self.structural_weight
+        if weight_sum <= 0:
+            ai_probability = 0.0
+        else:
+            ai_probability = (
+                self.stylometry_weight * stylometry_score +
+                self.structural_weight * structural_score
+            ) / weight_sum
 
         # Normalize to 0-1
         ai_probability = max(0.0, min(1.0, ai_probability))
@@ -128,11 +133,14 @@ class HeuristicAggregator:
         if not file_scores:
             return self._empty_repo_score()
 
-        # Calculate file-level statistics
-        file_probs = [fs.ai_probability for fs in file_scores]
-        mean_file_prob = np.mean(file_probs)
-        max_file_prob = np.max(file_probs)
-        median_file_prob = np.median(file_probs)
+        # Calculate file-level statistics (exclude parse failures from mean #17)
+        scored = [fs for fs in file_scores if not getattr(fs, 'parse_failed', False)]
+        if not scored:
+            scored = file_scores
+        file_probs = [fs.ai_probability for fs in scored]
+        mean_file_prob = float(np.mean(file_probs))
+        max_file_prob = float(np.max(file_probs))
+        median_file_prob = float(np.median(file_probs))
 
         # History score
         history_score = self._score_history(history)
@@ -141,15 +149,27 @@ class HeuristicAggregator:
         # Use combination of mean and max (high max with high mean is stronger signal)
         file_level_score = 0.6 * mean_file_prob + 0.4 * max_file_prob
 
-        # Final repo probability
-        repo_probability = (
-            0.7 * file_level_score +
-            0.3 * history_score
-        )
+        # Final repo probability using configured history weight (#17)
+        file_w = max(0.0, 1.0 - self.history_weight)
+        hist_w = max(0.0, self.history_weight)
+        weight_sum = file_w + hist_w
+        if weight_sum <= 0:
+            repo_probability = file_level_score
+        else:
+            repo_probability = (
+                file_w * file_level_score +
+                hist_w * history_score
+            ) / weight_sum
 
-        # Confidence based on consistency
-        file_std = np.std(file_probs)
-        confidence = 1.0 - min(file_std, 1.0)  # Lower variance = higher confidence
+        # Confidence: exclude parse-failure zeros (ai_probability==0 with empty explanations)
+        usable = [fs.ai_probability for fs in file_scores if not getattr(fs, 'parse_failed', False)]
+        if len(usable) >= 2:
+            file_std = float(np.std(usable))
+            confidence = max(0.0, 1.0 - min(file_std, 1.0))
+        elif len(usable) == 1:
+            confidence = 0.5
+        else:
+            confidence = 0.0
 
         # Find top suspicious files
         sorted_files = sorted(file_scores, key=lambda x: x.ai_probability, reverse=True)

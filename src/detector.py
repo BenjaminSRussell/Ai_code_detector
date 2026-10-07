@@ -170,6 +170,7 @@ class AICodeDetector:
                 structural_score=0.0,
                 feature_explanations={},
                 suspicious_snippets=[],
+                parse_failed=True,
             )
 
         # Parse AST if supported
@@ -187,6 +188,7 @@ class AICodeDetector:
                     structural_score=0.0,
                     feature_explanations={"error": "AST parsing failed"},
                     suspicious_snippets=[],
+                    parse_failed=True,
                 )
 
         # Extract features
