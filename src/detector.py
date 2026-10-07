@@ -147,6 +147,84 @@ class AICodeDetector:
 
         return repo_score
 
+    def analyze_loaded(
+        self,
+        repo_info,
+        files,
+        file_contents=None,
+        file_asts=None,
+        verbose: bool = True,
+    ):
+        """Score a repo using an already-loaded RepoInfo + file list (and optional contents/ASTs)."""
+        if not files:
+            return self._empty_result(repo_info.path)
+
+        file_contents = file_contents or {}
+        file_asts = file_asts or {}
+
+        file_scores = []
+        total_lines = 0
+        iterator = tqdm(files, desc="Analyzing files") if verbose else files
+        for file_info in iterator:
+            try:
+                code = file_contents.get(str(file_info.relative_path))
+                file_ast = file_asts.get(str(file_info.relative_path))
+                if code is None:
+                    file_score = self._analyze_file(file_info, repo_info.path)
+                else:
+                    file_score = self._analyze_file_from_content(
+                        file_info, code, file_ast
+                    )
+                file_scores.append(file_score)
+                total_lines += file_info.line_count
+            except Exception as e:
+                if verbose:
+                    print(f"Error analyzing {file_info.path}: {e}")
+                continue
+
+        if verbose:
+            print("Analyzing git history...")
+        history_features = self.history_analyzer.analyze_repo(repo_info)
+        lang_dist = self.file_filter.get_language_distribution(files)
+        repo_score = self.aggregator.aggregate_repo_features(
+            file_scores=file_scores,
+            history=history_features,
+            total_lines=total_lines,
+            language_dist=lang_dist,
+        )
+        repo_score.repo_path = str(repo_info.path)
+        return repo_score
+
+    def _analyze_file_from_content(self, file_info: FileInfo, code: str, file_ast=None) -> FileScore:
+        """Analyze a file from already-read content / optional AST."""
+        if file_ast is None:
+            parser = ASTParserFactory.get_parser(file_info.language)
+            if parser:
+                try:
+                    file_ast = parser.parse_file(file_info.path, code)
+                except Exception:
+                    return FileScore(
+                        file_path=str(file_info.relative_path),
+                        ai_probability=0.0,
+                        stylometry_score=0.0,
+                        structural_score=0.0,
+                        feature_explanations={"error": "AST parsing failed"},
+                        suspicious_snippets=[],
+                        parse_failed=True,
+                    )
+        stylometry_features = self.stylometry_analyzer.analyze_file(
+            code, file_info.language, file_ast
+        )
+        structural_features = self.structural_analyzer.analyze_file(
+            code, file_info.language, file_ast
+        )
+        file_score = self.aggregator.aggregate_file_features(
+            stylometry=stylometry_features,
+            structural=structural_features,
+        )
+        file_score.file_path = str(file_info.relative_path)
+        return file_score
+
     def _analyze_file(self, file_info: FileInfo, repo_root: Path) -> FileScore:
         """Analyze a single file.
 

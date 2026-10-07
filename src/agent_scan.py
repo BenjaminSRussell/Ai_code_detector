@@ -36,12 +36,9 @@ class AgentPrepScanner:
                 config_path = packaged_default
 
         self.detector = AICodeDetector(config_path=config_path)
-        self.git_loader = GitLoader()
-        self.file_filter = FileFilter(
-            supported_extensions=self.detector.config['ingestion']['supported_extensions'],
-            excluded_dirs=self.detector.config['ingestion']['excluded_dirs'],
-            max_file_size_mb=self.detector.config['ingestion']['max_file_size_mb'],
-        )
+        # Reuse the detector's loader/filter so the repo is walked once.
+        self.git_loader = self.detector.git_loader
+        self.file_filter = self.detector.file_filter
 
         feature_config = self.detector.config.get('features', {})
         self.duplication_analyzer = RepoDuplicationAnalyzer(config=feature_config.get('duplication', {}))
@@ -51,12 +48,15 @@ class AgentPrepScanner:
 
     def scan(self, source: str, verbose: bool = True) -> ScanFindings:
         """Run the full agent-prep scan against a repository or local path."""
-        repo_score = self.detector.analyze_repo(source, verbose=verbose)
-
+        if verbose:
+            print(f"Loading repository: {source}")
         repo_info = self.git_loader.load(source)
+        if verbose:
+            print(f"Repository path: {repo_info.path}")
         files = self.file_filter.scan_directory(repo_info.path)
 
         file_contents = {}
+        file_asts = {}
         performance_hotspots: List[HotspotFunction] = []
         satd_markers: List[SATDMarker] = []
 
@@ -69,6 +69,7 @@ class AgentPrepScanner:
 
             relative_path = str(file_info.relative_path)
             file_contents[relative_path] = code
+            file_info.line_count = code.count("\n") + (0 if code.endswith("\n") or not code else 1)
 
             satd_result = self.satd_analyzer.analyze_file(code, relative_path)
             satd_markers.extend(satd_result.markers)
@@ -76,10 +77,15 @@ class AgentPrepScanner:
             parser = ASTParserFactory.get_parser(file_info.language)
             if parser:
                 try:
-                    file_ast = parser.parse_file(Path(relative_path), code)
+                    file_ast = parser.parse_file(Path(file_info.path), code)
+                    file_asts[relative_path] = file_ast
                     performance_hotspots.extend(self.performance_analyzer.analyze_file(file_ast))
                 except Exception:
                     continue
+
+        repo_score = self.detector.analyze_loaded(
+            repo_info, files, file_contents=file_contents, file_asts=file_asts, verbose=verbose
+        )
 
         duplication_features = self.duplication_analyzer.analyze_repo(file_contents)
         attribution_features = self.attribution_analyzer.analyze_repo(repo_info)
@@ -126,20 +132,22 @@ class AgentPrepScanner:
         return findings
 
     def _build_duplication_findings(self, features: RepoDuplicationFeatures) -> List[Finding]:
-        # Overlapping n-gram windows over the same duplicated region each produce
-        # their own DuplicateBlock. Group blocks by the set of files they hit so
-        # a single genuine duplication collapses into one finding instead of one
-        # per overlapping window.
-        grouped: Dict[Tuple[str, ...], List[Tuple[str, int]]] = {}
+        # Blocks are already merged into maximal regions per file-set by the analyzer.
+        findings = []
         for block in features.duplicate_blocks:
             files_hit = tuple(sorted({loc[0] for loc in block.locations}))
-            merged_locations = grouped.setdefault(files_hit, [])
-            for loc in block.locations:
-                if loc not in merged_locations:
-                    merged_locations.append(loc)
-
-        findings = []
-        for files_hit, locations in grouped.items():
+            if len(files_hit) < 2:
+                continue
+            ranges = []
+            end_map = {}
+            if block.end_lines:
+                end_map = {path: end for path, end in block.end_lines}
+            for path, start in block.locations:
+                ranges.append({
+                    "file": path,
+                    "start_line": start,
+                    "end_line": end_map.get(path, start + max(1, len(block.lines)) - 1),
+                })
             findings.append(Finding(
                 type="duplication",
                 file=files_hit[0],
@@ -148,7 +156,7 @@ class AgentPrepScanner:
                     f"Code block duplicated across {len(files_hit)} files: "
                     f"{', '.join(files_hit)}"
                 ),
-                evidence={"locations": [list(loc) for loc in locations]},
+                evidence={"locations": ranges},
             ))
         return findings
 
