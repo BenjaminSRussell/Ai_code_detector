@@ -1,0 +1,14 @@
+# #12: optional pre-commit gate. In a consuming repo's .pre-commit-config.yaml:
+#   - repo: https://github.com/BenjaminSRussell/Ai_code_detector
+#     rev: main            # or a tag
+#     hooks:
+#       - id: aicd-gate
+#         args: [--threshold, "0.7"]
+- id: aicd-gate
+  name: aicd AI-code gate
+  description: Fail the commit if a staged source file's AI probability is above the threshold.
+  entry: aicd gate --quiet
+  language: python
+  types_or: [python, javascript, jsx, ts, tsx, go, rust]
+  pass_filenames: true
+  require_serial: true

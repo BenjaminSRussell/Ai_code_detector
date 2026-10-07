@@ -48,6 +48,9 @@ jobs:
           aicd scan sample --mode basic -q -f sarif --sarif-min-probability 0 -o sarif_out
           aicd agent-scan sample -q --sarif -o sarif_out
           python -c "import json; d=json.load(open('sarif_out/ai_detection_report.sarif')); assert d['version']=='2.1.0'"
+          # #12: PR gate from the installed package.
+          aicd gate --root sample m.py --json gate.json --threshold 0.99
+          python -c "import json; assert json.load(open('gate.json'))['passed']"
       - name: Upload SARIF artifact
         uses: actions/upload-artifact@v4
         with:
