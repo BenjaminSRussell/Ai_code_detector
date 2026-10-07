@@ -6,6 +6,7 @@ import click
 
 from .detector_enhanced import EnhancedAICodeDetector
 from .report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
+from .report.reporter_sarif import SarifReporter
 
 
 @click.command()
@@ -22,9 +23,16 @@ from .report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownRepo
 )
 @click.option(
     '--format', '-f',
-    type=click.Choice(['json', 'markdown', 'both'], case_sensitive=False),
+    type=click.Choice(['json', 'markdown', 'both', 'sarif', 'all'], case_sensitive=False),
     default='both',
-    help='Report format'
+    help='Report format: json, markdown, both (json+markdown), sarif (GitHub code scanning), all'
+)
+@click.option(
+    '--sarif-min-probability',
+    type=click.FloatRange(0.0, 1.0),
+    default=0.4,
+    show_default=True,
+    help='Lowest file AI probability that becomes a SARIF result (note level)'
 )
 @click.option(
     '--mode',
@@ -74,6 +82,7 @@ def main(
     config: Path,
     output: Path,
     format: str,
+    sarif_min_probability: float,
     mode: str,
     no_ml: bool,
     no_explanations: bool,
@@ -166,17 +175,23 @@ def main(
     markdown_reporter = EnhancedMarkdownReporter()
 
     # Generate requested formats
-    if format in ['json', 'both']:
+    if format in ['json', 'both', 'all']:
         json_path = output_dir / 'ai_detection_report_enhanced.json'
         json_reporter.generate(repo_score, json_path)
         if not quiet:
             print(f"JSON report saved to: {json_path}")
 
-    if format in ['markdown', 'both']:
+    if format in ['markdown', 'both', 'all']:
         md_path = output_dir / 'ai_detection_report_enhanced.md'
         markdown_reporter.generate(repo_score, md_path)
         if not quiet:
             print(f"Markdown report saved to: {md_path}")
+
+    if format in ['sarif', 'all']:
+        sarif_path = output_dir / 'ai_detection_report.sarif'
+        SarifReporter(min_probability=sarif_min_probability).generate(repo_score, sarif_path)
+        if not quiet:
+            print(f"SARIF report saved to: {sarif_path}")
 
     # Print summary
     if not quiet:

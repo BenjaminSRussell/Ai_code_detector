@@ -30,6 +30,9 @@ from .model.explainer import get_explainer, ExplanationGenerator
 class EnhancedAICodeDetector:
     """Detector with heuristics, ML classifier, and explanations."""
 
+    # Length of _features_to_vector(): 12 stylometry + 11 structural.
+    FEATURE_DIM = 23
+
     def __init__(
         self,
         config_path: Optional[Path] = None,
@@ -96,7 +99,23 @@ class EnhancedAICodeDetector:
                 model_path=None,  # Use default
             )
 
-            self.ml_classifier = MLClassifier(model_path=ml_model_path)
+            # Size the classifier to what this detector actually feeds it: the
+            # embedder's output and the 23-dim _features_to_vector(). The old
+            # defaults (768/34) never matched the hash embedder (256), so every
+            # file raised "shapes not aligned" and enhanced mode scored nothing.
+            embedding_dim = getattr(self.embedder, "dim", None) or len(self.embedder.embed("pass\n"))
+            self.ml_classifier = MLClassifier(
+                model_path=ml_model_path,
+                embedding_dim=embedding_dim,
+                feature_dim=self.FEATURE_DIM,
+            )
+            if (self.ml_classifier.embedding_dim, self.ml_classifier.feature_dim) != (embedding_dim, self.FEATURE_DIM):
+                raise ValueError(
+                    f"model {ml_model_path} expects embedding_dim={self.ml_classifier.embedding_dim}, "
+                    f"feature_dim={self.ml_classifier.feature_dim}; this detector produces "
+                    f"{embedding_dim}/{self.FEATURE_DIM} (embedder={embedder_backend}). "
+                    "Retrain with `aicd train` using the same embedder."
+                )
 
         # Phase 3 components
         self.use_explanations = use_explanations
