@@ -218,6 +218,20 @@ WHERE f.scan_id = (SELECT max(id) FROM scans WHERE repo_path = '/abs/path/to/rep
 ORDER BY f.ai_probability DESC;
 ```
 
+## HTML findings viewer
+
+```bash
+aicd scan ./examples --html ./out/report.html          # works with --mode basic or enhanced
+```
+
+This writes **one self-contained file**: inline CSS and JS, with the scan data embedded. It makes no network requests, so you can open it straight from disk or attach it to a ticket. It has three views:
+
+- **Repo summary:** probability, verdict, confidence, stylometry/structural/history scores, files and lines, languages, and the count of files suppressed by `.aicdignore`.
+- **File table:** sortable columns, a path filter, and a **threshold slider**. Set the slider's starting value with `--html-threshold 0.6`, or add `?threshold=0.6` or `#threshold=0.6` to the URL.
+- **File detail:** click a row, or link to `#file=path/to/file.py`. It shows the **top 5 features by their share of the file's AI probability**, along with component scores, the indicators over threshold, and the natural-language explanation in enhanced mode.
+
+Feature shares come from `FileScore.feature_contributions`, an additive breakdown of the heuristic score, so the shares sum to the probability. In enhanced mode the heuristic terms are scaled by 0.4 and the classifier appears as a single `ml_classifier` term (0.6 × p). JSON reports also carry `top_features` for each file. Every number in the viewer comes from the scan, and an empty scan shows an empty state.
+
 ## SARIF export (GitHub code scanning)
 
 ```bash
