@@ -210,6 +210,7 @@ class EnhancedAICodeDetector:
             if self.use_explanations:
                 print("  (Includes natural language explanations)")
 
+        repo_score.suppressed = self.file_filter.last_suppressed.to_dict()
         return repo_score
 
     def _analyze_file_enhanced(self, file_info: FileInfo, repo_root: Path) -> FileScore:
@@ -358,6 +359,7 @@ class EnhancedAICodeDetector:
             total_files_analyzed=0,
             total_lines_analyzed=0,
             language_distribution={},
+            suppressed=self.file_filter.last_suppressed.to_dict(),
         )
 
     def _default_config(self) -> Dict:

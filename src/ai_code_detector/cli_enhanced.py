@@ -63,6 +63,16 @@ from .report.reporter_sarif import SarifReporter
     help='Explanation backend for Phase 3'
 )
 @click.option(
+    '--suppressions',
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help='Suppressions file (default: <repo>/.aicdignore when present)'
+)
+@click.option(
+    '--no-suppressions',
+    is_flag=True,
+    help='Ignore .aicdignore and scan every file'
+)
+@click.option(
     '--quiet', '-q',
     is_flag=True,
     help='Suppress progress output'
@@ -78,6 +88,8 @@ def main(
     no_explanations: bool,
     embedder: str,
     explainer: str,
+    suppressions: Path,
+    no_suppressions: bool,
     quiet: bool
 ):
     """Analyze a GitHub repository or local directory for AI-generated code.
@@ -131,6 +143,8 @@ def main(
         embedder_backend=embedder,
         explainer_backend=explainer,
     )
+    detector.file_filter.suppressions_file = suppressions
+    detector.file_filter.use_suppressions = not no_suppressions
 
     # Run analysis
     try:

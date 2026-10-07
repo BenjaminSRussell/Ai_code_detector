@@ -145,6 +145,7 @@ class AICodeDetector:
             print(f"\nAnalysis complete!")
             print(f"AI Probability: {repo_score.ai_probability*100:.1f}%")
 
+        repo_score.suppressed = self.file_filter.last_suppressed.to_dict()
         return repo_score
 
     def analyze_loaded(
@@ -193,6 +194,7 @@ class AICodeDetector:
             language_dist=lang_dist,
         )
         repo_score.repo_path = str(repo_info.path)
+        repo_score.suppressed = self.file_filter.last_suppressed.to_dict()
         return repo_score
 
     def _analyze_file_from_content(self, file_info: FileInfo, code: str, file_ast=None) -> FileScore:
@@ -303,6 +305,7 @@ class AICodeDetector:
             total_files_analyzed=0,
             total_lines_analyzed=0,
             language_distribution={},
+            suppressed=self.file_filter.last_suppressed.to_dict(),
         )
 
     def _default_config(self) -> Dict:

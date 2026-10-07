@@ -2,8 +2,10 @@
 
 import os
 from pathlib import Path
-from typing import List, Set, Dict
+from typing import List, Set, Dict, Optional
 from dataclasses import dataclass
+
+from .suppressions import Suppressions, SuppressionSummary
 
 
 @dataclass
@@ -64,6 +66,10 @@ class FileFilter:
         self.supported_extensions = set(supported_extensions)
         self.excluded_dirs = set(excluded_dirs)
         self.max_file_size_bytes = int(max_file_size_mb * 1024 * 1024)
+        # Suppressions: None -> auto-load <root>/.aicdignore; a path -> that file.
+        self.suppressions_file: Optional[Path] = None
+        self.use_suppressions: bool = True
+        self.last_suppressed: SuppressionSummary = SuppressionSummary()
 
     def scan_directory(self, root_path: Path) -> List[FileInfo]:
         """Scan directory for supported code files.
@@ -75,6 +81,12 @@ class FileFilter:
             List of FileInfo for valid code files
         """
         files = []
+        if self.use_suppressions:
+            suppressions = Suppressions.load(root_path, self.suppressions_file)
+        else:
+            suppressions = Suppressions()
+        summary = SuppressionSummary(source=suppressions.source, rules=list(suppressions.rules))
+        self.last_suppressed = summary
 
         for dirpath, dirnames, filenames in os.walk(root_path):
             # Filter out excluded directories
@@ -86,6 +98,13 @@ class FileFilter:
                 # Check extension
                 if file_path.suffix not in self.supported_extensions:
                     continue
+
+                relative_path = file_path.relative_to(root_path)
+                if suppressions.rules:
+                    rule = suppressions.match(relative_path)
+                    if rule is not None:
+                        summary.record(relative_path.as_posix(), rule)
+                        continue
 
                 # Check file size
                 try:
@@ -107,7 +126,7 @@ class FileFilter:
 
                 files.append(FileInfo(
                     path=file_path,
-                    relative_path=file_path.relative_to(root_path),
+                    relative_path=relative_path,
                     language=language,
                     size_bytes=size,
                     line_count=line_count,
