@@ -44,3 +44,14 @@ jobs:
           aicd scan sample --mode basic -q -f json -o scan_out
           test -f scan_out/ai_detection_report_enhanced.json
           aicd explain sample/m.py --json --no-ml
+          # #13: SARIF export validated in tests; ship one as a build artifact.
+          aicd scan sample --mode basic -q -f sarif --sarif-min-probability 0 -o sarif_out
+          aicd agent-scan sample -q --sarif -o sarif_out
+          python -c "import json; d=json.load(open('sarif_out/ai_detection_report.sarif')); assert d['version']=='2.1.0'"
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aicd-sarif
+          path: |
+            /tmp/sarif_out/ai_detection_report.sarif
+            /tmp/sarif_out/ai_scan_findings.sarif

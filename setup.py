@@ -27,6 +27,7 @@ setup(
         "dev": [
             "pytest>=7.4.0",
             "pytest-cov>=4.1.0",
+            "jsonschema>=4.0",
         ],
         # Not imported by the current code; reserved for tree-sitter backends (#7).
         "treesitter": [

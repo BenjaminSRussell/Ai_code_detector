@@ -144,6 +144,48 @@ ai-code-detector/
 
 See STATUS.txt for detailed information about what is implemented, tested, and ready to use.
 
+## SARIF export (GitHub code scanning)
+
+```bash
+aicd scan . -f sarif -o reports/            # reports/ai_detection_report.sarif
+aicd scan . -f all -o reports/              # json + markdown + sarif
+aicd agent-scan . --sarif -o reports/       # reports/ai_scan_findings.sarif (+ the usual md/json)
+```
+
+- **Schema version:** SARIF **2.1.0** (OASIS), with `"$schema": "https://json.schemastore.org/sarif-2.1.0.json"`. This is the only version GitHub code scanning accepts. Tests validate the output against a vendored copy of the schema (`tests/fixtures/sarif-schema-2.1.0.json`).
+- **Verdict → level** (rule `aicd/file/ai-generated`, one result per file):
+
+  | File AI probability | SARIF level |
+  |---|---|
+  | ≥ 0.80 (very likely AI) | `error` |
+  | ≥ 0.60 (likely AI) | `warning` |
+  | ≥ `--sarif-min-probability` (default 0.40) | `note` |
+  | lower | no result |
+
+- **Agent-scan findings** use the rules `aicd/agent/<type>` (`satd`, `duplication`, `performance_hotspot`, ...) and map severity `high` → `error`, `warning` → `warning`, `info` → `note`.
+  - Findings that have a line number carry a `region`.
+  - Repository-level findings (for example commit-history attribution) have no file location, so they appear under `runs[0].properties.repositoryFindings`.
+- URIs are repo-relative under `%SRCROOT%`.
+- `partialFingerprints` are content-independent (rule + path), so alerts track files across commits instead of reopening.
+
+Upload from a workflow:
+
+```yaml
+permissions:
+  contents: read
+  security-events: write
+steps:
+  - uses: actions/checkout@v4
+  - run: pip install git+https://github.com/BenjaminSRussell/Ai_code_detector.git
+  - run: aicd scan . --mode basic -q -f sarif -o aicd || true   # exit code gates separately
+  - uses: github/codeql-action/upload-sarif@v3
+    with:
+      sarif_file: aicd/ai_detection_report.sarif
+      category: aicd
+```
+
+This repo's CI builds both SARIF files on every push and uploads them as the `aicd-sarif` artifact.
+
 ## Limitations
 
 This tool provides probabilistic analysis, not definitive proof:
