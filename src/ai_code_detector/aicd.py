@@ -4,6 +4,7 @@
     aicd agent-scan SOURCE ...                      agent-readable findings
     aicd explain FILE ...                           score + explanation for one file
     aicd train DATASET.jsonl -o model.json          fit the Phase 2 classifier
+    aicd gate FILES... [--threshold 0.7]            fail if any file is above threshold (PR/pre-commit)
 
 ``scan`` is the former ``ai-code-detector-enhanced`` command, with the same
 options, outputs, and exit codes. ``agent-scan`` is the former
@@ -23,7 +24,7 @@ from . import cli as _cli_basic
 from . import cli_agent_scan as _cli_agent_scan
 from . import cli_enhanced as _cli_enhanced
 
-SUBCOMMANDS = ("scan", "agent-scan", "explain", "train")
+SUBCOMMANDS = ("scan", "agent-scan", "explain", "train", "gate")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -34,6 +35,10 @@ def main():
 
 main.add_command(_cli_enhanced.main, name="scan")
 main.add_command(_cli_agent_scan.main, name="agent-scan")
+
+from .gate import gate as _gate  # noqa: E402
+
+main.add_command(_gate, name="gate")
 
 
 def _file_info(path: Path):

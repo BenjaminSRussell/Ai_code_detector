@@ -229,6 +229,67 @@ steps:
 
 This repo's CI builds both SARIF files on every push and uploads them as the `aicd-sarif` artifact.
 
+## PR gate (GitHub Action + pre-commit)
+
+`aicd gate FILES...` scores only the files you pass it, for example a PR's diff or staged files. It exits **1** if any file's AI probability is **above the threshold**.
+- It honors `.aicdignore`, skips deleted and non-source files, and lists every skipped file.
+- It writes `--json` and `--sarif` reports.
+- It appends a Markdown table to `$GITHUB_STEP_SUMMARY`.
+
+```bash
+git diff --name-only origin/main...HEAD | aicd gate --paths-from - --threshold 0.7
+```
+
+- **Default threshold:** **0.7**. Override it with `--threshold`, the `AICD_THRESHOLD` env var, or (in CI) the repository variable **`AICD_THRESHOLD`** under *Settings → Secrets and variables → Actions → Variables*.
+- **Mode:** `basic` by default (heuristics only: stable and fast). `--mode enhanced` adds the ML classifier.
+
+**This repo:** `.github/workflows/ai-scan.yml` runs on `pull_request` when `*.py|*.ts|*.tsx|*.js|*.jsx|*.go|*.rs` change.
+- It diffs `origin/<base>...HEAD`, gates only those files, and lists flagged paths with scores in the job summary.
+- It uploads `report.json`, `report.sarif`, and `changed.txt` as the `aicd-gate` artifact.
+
+**Other repos:** use the composite action:
+
+```yaml
+on: pull_request
+jobs:
+  aicd:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - uses: BenjaminSRussell/Ai_code_detector@main
+        env:
+          AICD_THRESHOLD: ${{ vars.AICD_THRESHOLD }}   # unset → 0.7
+        with:
+          mode: basic            # inputs: threshold, mode, base-ref, extensions, report-dir, upload-artifact
+```
+
+**pre-commit (optional):** `.pre-commit-config.yaml`:
+
+```yaml
+- repo: https://github.com/BenjaminSRussell/Ai_code_detector
+  rev: main
+  hooks:
+    - id: aicd-gate
+      args: [--threshold, "0.7"]
+```
+
+With `--quiet` (the hook default) it stays silent when the commit passes and prints the table when it fails.
+
+**Fixture PR:** `tests/fixtures/gate_pr/` is a ready-made "PR":
+- a generated-looking file that gets flagged at 0.4
+- a hand-written file that passes
+- a vendored file suppressed by `.aicdignore`
+- a README that is skipped
+
+`tests/test_gate.py` commits it onto a base branch in a temp git repo, takes the same `git diff` the Action uses, and asserts the outcome. To reproduce by hand:
+
+```bash
+aicd gate --root tests/fixtures/gate_pr generated_helper.py hand_written.py third_party/vendored.py README.md -t 0.4
+```
+
 ## Limitations
 
 This tool provides probabilistic analysis, not definitive proof:

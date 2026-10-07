@@ -1,0 +1,36 @@
+name: AI scan (PR gate)
+
+# #12: score only the files a PR changes; fail if any is above the threshold.
+# Threshold: repository variable AICD_THRESHOLD (Settings → Secrets and
+# variables → Actions → Variables). Default 0.7 when unset.
+on:
+  pull_request:
+    paths:
+      - '**/*.py'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.go'
+      - '**/*.rs'
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: aicd gate (changed files only)
+        uses: ./
+        env:
+          AICD_THRESHOLD: ${{ vars.AICD_THRESHOLD }}
+        with:
+          mode: basic
