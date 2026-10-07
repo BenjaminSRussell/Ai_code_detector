@@ -7,6 +7,7 @@ import click
 from .detector_enhanced import EnhancedAICodeDetector
 from .report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
 from .report.reporter_sarif import SarifReporter
+from .report.reporter_html import HTMLReporter
 
 
 @click.command()
@@ -33,6 +34,18 @@ from .report.reporter_sarif import SarifReporter
     default=0.4,
     show_default=True,
     help='Lowest file AI probability that becomes a SARIF result (note level)'
+)
+@click.option(
+    '--html', 'html_path',
+    type=click.Path(dir_okay=False, path_type=Path),
+    help='Also write a self-contained HTML viewer (sortable file table, threshold slider, feature bars)'
+)
+@click.option(
+    '--html-threshold',
+    type=click.FloatRange(0.0, 1.0),
+    default=0.0,
+    show_default=True,
+    help='Initial threshold of the HTML viewer slider (also settable with ?threshold= in the URL)'
 )
 @click.option(
     '--mode',
@@ -83,6 +96,8 @@ def main(
     output: Path,
     format: str,
     sarif_min_probability: float,
+    html_path: Path,
+    html_threshold: float,
     mode: str,
     no_ml: bool,
     no_explanations: bool,
@@ -192,6 +207,11 @@ def main(
         SarifReporter(min_probability=sarif_min_probability).generate(repo_score, sarif_path)
         if not quiet:
             print(f"SARIF report saved to: {sarif_path}")
+
+    if html_path:
+        HTMLReporter(mode=mode, threshold=html_threshold).generate(repo_score, html_path)
+        if not quiet:
+            print(f"HTML viewer saved to: {html_path}")
 
     # Print summary
     if not quiet:

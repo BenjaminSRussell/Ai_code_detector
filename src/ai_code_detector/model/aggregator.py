@@ -19,6 +19,10 @@ class FileScore:
     feature_explanations: Dict[str, float]
     suspicious_snippets: List[Dict]
     parse_failed: bool = False
+    # Additive decomposition of ai_probability: feature -> share of the final
+    # probability (sums to ai_probability unless a component hit its 1.0 cap,
+    # in which case that component's terms are scaled down proportionally).
+    feature_contributions: Dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -113,6 +117,7 @@ class HeuristicAggregator:
             structural_score=structural_score,
             feature_explanations=explanations,
             suspicious_snippets=[],  # TODO: Add snippet extraction
+            feature_contributions=self.feature_contributions(stylometry, structural),
         )
 
     def aggregate_repo_features(
@@ -201,60 +206,65 @@ class HeuristicAggregator:
 
         Higher score = more likely AI.
         """
-        score = 0.0
+        return min(1.0, sum(self._stylometry_terms(features).values()))
 
-        # Comment features (30%)
-        # High comment ratio with boilerplate = AI
-        if features.comment_to_code_ratio > 0.3:
-            score += 0.1
-        score += 0.1 * features.boilerplate_comment_score
-        score += 0.1 * features.tutorial_comment_score
-
-        # Naming features (30%)
-        # Generic names + low entropy = AI
-        score += 0.15 * features.generic_name_ratio
-        if features.identifier_entropy < 2.0:
-            score += 0.15
-
-        # Formatting features (20%)
-        # Perfect consistency might be AI
-        if features.indentation_consistency > 0.95:
-            score += 0.1
-        if features.trailing_whitespace_ratio < 0.01:
-            score += 0.1
-
-        # Duplication features (20%)
-        score += 0.1 * features.code_duplication_score
-        score += 0.1 * features.intra_file_similarity
-
-        return min(1.0, score)
+    def _stylometry_terms(self, features: StylometricFeatures) -> Dict[str, float]:
+        """Per-feature terms of the stylometry score (they sum to it before the 1.0 cap)."""
+        return {
+            # Comment features (30%): high comment ratio with boilerplate = AI
+            'high_comment_ratio': 0.1 if features.comment_to_code_ratio > 0.3 else 0.0,
+            'boilerplate_comments': 0.1 * features.boilerplate_comment_score,
+            'tutorial_comments': 0.1 * features.tutorial_comment_score,
+            # Naming features (30%): generic names + low entropy = AI
+            'generic_naming': 0.15 * features.generic_name_ratio,
+            'low_identifier_entropy': 0.15 if features.identifier_entropy < 2.0 else 0.0,
+            # Formatting features (20%): perfect consistency might be AI
+            'uniform_indentation': 0.1 if features.indentation_consistency > 0.95 else 0.0,
+            'no_trailing_whitespace': 0.1 if features.trailing_whitespace_ratio < 0.01 else 0.0,
+            # Duplication features (20%)
+            'code_duplication': 0.1 * features.code_duplication_score,
+            'intra_file_similarity': 0.1 * features.intra_file_similarity,
+        }
 
     def _score_structural(self, features: StructuralFeatures) -> float:
         """Convert structural features to 0-1 score.
 
         Higher score = more likely AI.
         """
-        score = 0.0
+        return min(1.0, sum(self._structural_terms(features).values()))
 
-        # Complexity vs documentation (30%)
-        # Over-explained simple code = AI
-        score += 0.15 * features.over_explained_simple_functions
-        if features.avg_cyclomatic_complexity < 3.0 and features.complexity_to_docstring_ratio > 50:
-            score += 0.15
+    def _structural_terms(self, features: StructuralFeatures) -> Dict[str, float]:
+        """Per-feature terms of the structural score (they sum to it before the 1.0 cap)."""
+        return {
+            # Complexity vs documentation (30%): over-explained simple code = AI
+            'over_explained_functions': 0.15 * features.over_explained_simple_functions,
+            'docstring_heavy_simple_code': 0.15 if (features.avg_cyclomatic_complexity < 3.0
+                                                    and features.complexity_to_docstring_ratio > 50) else 0.0,
+            # Error handling (30%)
+            'generic_exceptions': 0.15 * features.generic_exception_ratio,
+            'print_on_error': 0.15 * features.print_error_pattern_score,
+            # Dead code (25%)
+            'unused_functions': 0.1 * features.unused_function_ratio,
+            'unused_imports': 0.1 * features.unused_import_ratio,
+            'unreachable_code': 0.05 * features.unreachable_code_score,
+            # Missing cleanup (15%)
+            'missing_cleanup': 0.15 * features.missing_cleanup_score,
+        }
 
-        # Error handling (30%)
-        score += 0.15 * features.generic_exception_ratio
-        score += 0.15 * features.print_error_pattern_score
-
-        # Dead code (25%)
-        score += 0.1 * features.unused_function_ratio
-        score += 0.1 * features.unused_import_ratio
-        score += 0.05 * features.unreachable_code_score
-
-        # Missing cleanup (15%)
-        score += 0.15 * features.missing_cleanup_score
-
-        return min(1.0, score)
+    def feature_contributions(self, stylometry: StylometricFeatures,
+                              structural: StructuralFeatures) -> Dict[str, float]:
+        """Each feature's share of the file's heuristic ai_probability."""
+        weight_sum = self.stylometry_weight + self.structural_weight
+        if weight_sum <= 0 or stylometry is None or structural is None:
+            return {}
+        out: Dict[str, float] = {}
+        for terms, weight in ((self._stylometry_terms(stylometry), self.stylometry_weight),
+                              (self._structural_terms(structural), self.structural_weight)):
+            total = sum(terms.values())
+            cap = 1.0 / total if total > 1.0 else 1.0  # mirror min(1.0, score)
+            for name, term in terms.items():
+                out[name] = out.get(name, 0.0) + term * cap * weight / weight_sum
+        return out
 
     def _score_history(self, features: HistoryFeatures) -> float:
         """Convert history features to 0-1 score.

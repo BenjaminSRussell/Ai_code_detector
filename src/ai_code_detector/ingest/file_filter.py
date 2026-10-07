@@ -115,10 +115,11 @@ class FileFilter:
                     continue
 
                 # Count lines
+                # (#10) was hard-coded to 0, so every report said "0 lines".
                 try:
-                    # Defer full reads to the analyzer so each file is opened once.
-                    line_count = 0
-                except Exception:
+                    data = file_path.read_bytes()
+                    line_count = data.count(b"\n") + (1 if data and not data.endswith(b"\n") else 0)
+                except OSError:
                     line_count = 0
 
                 # Detect language
