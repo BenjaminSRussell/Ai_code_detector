@@ -3,7 +3,7 @@ AI CODE DETECTOR - PROJECT STATUS
 =============================================================================
 
 Last Updated: 2025-11-09
-Version: 0.3.0
+Version: 0.3.0 (setup.py now matches)
 Status: Phase 1, 2, and 3 Complete
 
 =============================================================================
@@ -297,27 +297,27 @@ Config Files: 2
 Documentation: 2
 
 Core Components:
-  src/detector.py: Phase 1 detector (200 lines)
-  src/detector_enhanced.py: Phase 1+2+3 detector (350 lines)
-  src/model/embedder_mlx.py: Code embedder (350 lines)
-  src/model/classifier.py: ML classifier (350 lines)
-  src/model/explainer.py: Explanation generator (400 lines)
+  src/ai_code_detector/detector.py: Phase 1 detector (200 lines)
+  src/ai_code_detector/detector_enhanced.py: Phase 1+2+3 detector (350 lines)
+  src/ai_code_detector/model/embedder_mlx.py: Code embedder (350 lines)
+  src/ai_code_detector/model/classifier.py: ML classifier (350 lines)
+  src/ai_code_detector/model/explainer.py: Explanation generator (400 lines)
 
 =============================================================================
 USAGE EXAMPLES
 =============================================================================
 
 Basic Detection:
-  python -m src.cli https://github.com/user/repo
-  python -m src.cli /path/to/repo -f json -o ./reports
+  ai-code-detector https://github.com/user/repo
+  ai-code-detector /path/to/repo -f json -o ./reports
 
 Enhanced Detection:
-  python -m src.cli_enhanced ./repo --mode enhanced
-  python -m src.cli_enhanced ./repo --embedder hash --explainer template
+  ai-code-detector-enhanced ./repo --mode enhanced
+  ai-code-detector-enhanced ./repo --embedder hash --explainer template
 
 Customization:
-  python -m src.cli ./repo -c configs/custom.yaml
-  python -m src.cli_enhanced ./repo --no-ml --no-explanations
+  ai-code-detector ./repo -c my-config.yaml
+  ai-code-detector-enhanced ./repo --no-ml --no-explanations
 
 Programmatic:
   from src.detector import AICodeDetector
@@ -410,7 +410,7 @@ RECOMMENDED USAGE:
   - Use Phase 3 for human-readable explanations
 
 BEST CONFIGURATION (no extra dependencies):
-  python -m src.cli_enhanced ./repo --mode enhanced
+  ai-code-detector-enhanced ./repo --mode enhanced
 
 This configuration works out of the box with no MLX or Qwen required.
 

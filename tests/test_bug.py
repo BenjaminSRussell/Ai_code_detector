@@ -7,10 +7,9 @@ import tempfile
 import shutil
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from detector import AICodeDetector
-from ingest.file_filter import FileInfo
+from ai_code_detector.detector import AICodeDetector
+from ai_code_detector.ingest.file_filter import FileInfo
 
 def test_syntactically_incorrect_file():
     """Test that a syntactically incorrect file gets a low score."""

@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 print("=" * 60)
 print("Testing Phase 2+3 Enhanced Features")
@@ -15,7 +14,7 @@ print()
 print("Test 1: Code Embedder (Phase 2)")
 print("-" * 60)
 
-from model.embedder_mlx import get_embedder
+from ai_code_detector.model.embedder_mlx import get_embedder
 
 # Test hash embedder (fallback)
 embedder = get_embedder(backend="hash", dim=768)
@@ -40,7 +39,7 @@ print()
 print("Test 2: ML Classifier (Phase 2)")
 print("-" * 60)
 
-from model.classifier import MLClassifier
+from ai_code_detector.model.classifier import MLClassifier
 
 classifier = MLClassifier()
 
@@ -59,7 +58,7 @@ print()
 print("Test 3: Explanation Generator (Phase 3)")
 print("-" * 60)
 
-from model.explainer import get_explainer
+from ai_code_detector.model.explainer import get_explainer
 
 # Test template explainer
 explainer = get_explainer(backend="template")
@@ -89,7 +88,7 @@ print("Test 4: Enhanced Detector")
 print("-" * 60)
 
 try:
-    from detector_enhanced import EnhancedAICodeDetector
+    from ai_code_detector.detector_enhanced import EnhancedAICodeDetector
 
     # Initialize with all features
     detector = EnhancedAICodeDetector(
@@ -115,8 +114,8 @@ print()
 print("Test 5: Enhanced Reporters")
 print("-" * 60)
 
-from report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
-from model.aggregator import RepoScore, FileScore
+from ai_code_detector.report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
+from ai_code_detector.model.aggregator import RepoScore, FileScore
 
 # Create mock enhanced file score with explanation
 file_score = FileScore(

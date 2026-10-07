@@ -3,9 +3,8 @@
 import sys
 import tempfile
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from analysis.metrics_performance import HotspotFunction, PerformanceProfiler, merge_profiling_results
+from ai_code_detector.analysis.metrics_performance import HotspotFunction, PerformanceProfiler, merge_profiling_results
 
 
 def test_detect_entry_point_finds_pytest_tests_dir(tmp_path):

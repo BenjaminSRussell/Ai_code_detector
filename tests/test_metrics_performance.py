@@ -2,10 +2,9 @@
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from analysis.ast_parser import PythonASTParser
-from analysis.metrics_performance import PerformanceAnalyzer
+from ai_code_detector.analysis.ast_parser import PythonASTParser
+from ai_code_detector.analysis.metrics_performance import PerformanceAnalyzer
 
 
 def _parse(code):

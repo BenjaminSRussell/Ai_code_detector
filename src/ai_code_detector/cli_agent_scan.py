@@ -4,8 +4,8 @@ import sys
 from pathlib import Path
 import click
 
-from agent_scan import AgentPrepScanner
-from report.reporter_findings import FindingsMarkdownWriter, FindingsJSONWriter
+from .agent_scan import AgentPrepScanner
+from .report.reporter_findings import FindingsMarkdownWriter, FindingsJSONWriter
 
 
 @click.command()

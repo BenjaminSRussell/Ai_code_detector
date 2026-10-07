@@ -7,13 +7,12 @@ import tempfile
 import shutil
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from analysis.tokenizer import CodeTokenizer
-from analysis.ast_parser import PythonASTParser
-from analysis.metrics_stylometry import StylometryAnalyzer
-from analysis.metrics_structural import StructuralAnalyzer
-from detector import AICodeDetector
+from ai_code_detector.analysis.tokenizer import CodeTokenizer
+from ai_code_detector.analysis.ast_parser import PythonASTParser
+from ai_code_detector.analysis.metrics_stylometry import StylometryAnalyzer
+from ai_code_detector.analysis.metrics_structural import StructuralAnalyzer
+from ai_code_detector.detector import AICodeDetector
 
 def test_tokenizer():
     """Test code tokenizer."""

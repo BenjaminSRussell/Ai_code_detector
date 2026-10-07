@@ -2,9 +2,8 @@
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from analysis.metrics_duplication import RepoDuplicationAnalyzer
+from ai_code_detector.analysis.metrics_duplication import RepoDuplicationAnalyzer
 
 
 def test_no_duplication_across_distinct_files():

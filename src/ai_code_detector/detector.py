@@ -13,14 +13,14 @@ except ImportError:
     def tqdm(iterable, **kwargs):
         return iterable
 
-from ingest.git_loader import GitLoader, RepoInfo
-from ingest.file_filter import FileFilter, FileInfo
-from analysis.tokenizer import CodeTokenizer
-from analysis.ast_parser import ASTParserFactory, FileAST
-from analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
-from analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
-from analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
-from model.aggregator import HeuristicAggregator, FileScore, RepoScore
+from .ingest.git_loader import GitLoader, RepoInfo
+from .ingest.file_filter import FileFilter, FileInfo
+from .analysis.tokenizer import CodeTokenizer
+from .analysis.ast_parser import ASTParserFactory, FileAST
+from .analysis.metrics_stylometry import StylometryAnalyzer, StylometricFeatures
+from .analysis.metrics_structural import StructuralAnalyzer, StructuralFeatures
+from .analysis.metrics_history import HistoryAnalyzer, HistoryFeatures
+from .model.aggregator import HeuristicAggregator, FileScore, RepoScore
 
 
 class AICodeDetector:

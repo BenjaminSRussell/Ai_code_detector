@@ -3,10 +3,9 @@
 import sys
 from pathlib import Path
 from datetime import datetime
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from analysis.metrics_attribution import AttributionAnalyzer
-from ingest.git_loader import RepoInfo, CommitInfo
+from ai_code_detector.analysis.metrics_attribution import AttributionAnalyzer
+from ai_code_detector.ingest.git_loader import RepoInfo, CommitInfo
 
 
 def _make_repo_info(messages):

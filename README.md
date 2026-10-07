@@ -34,6 +34,8 @@ git clone https://github.com/BenjaminSRussell/Ai_code_detector.git
 cd Ai_code_detector
 pip install -r requirements.txt
 pip install -e .
+# Console scripts: ai-code-detector, ai-code-detector-enhanced, ai-code-detector-agent-scan
+# (or: python -m ai_code_detector <repo>)
 ```
 
 ## Quick Start
@@ -41,25 +43,25 @@ pip install -e .
 ### Basic Detection (Phase 1)
 
 ```bash
-python -m src.cli https://github.com/user/repo
-python -m src.cli /path/to/local/repo
+ai-code-detector https://github.com/user/repo
+ai-code-detector /path/to/local/repo
 ```
 
 ### Enhanced Detection (Phase 2+3)
 
 ```bash
 # Enhanced with ML + explanations
-python -m src.cli_enhanced ./repo --mode enhanced
+ai-code-detector-enhanced ./repo --mode enhanced
 
 # With hash embeddings (fast, no dependencies)
-python -m src.cli_enhanced ./repo --embedder hash
+ai-code-detector-enhanced ./repo --embedder hash
 
 # With MLX embeddings (Apple Silicon)
-python -m src.cli_enhanced ./repo --embedder mlx
+ai-code-detector-enhanced ./repo --embedder mlx
 
 # Disable ML or explanations
-python -m src.cli_enhanced ./repo --no-ml
-python -m src.cli_enhanced ./repo --no-explanations
+ai-code-detector-enhanced ./repo --no-ml
+ai-code-detector-enhanced ./repo --no-explanations
 ```
 
 ## How It Works
@@ -121,17 +123,19 @@ scoring:
 
 ```
 ai-code-detector/
-├── src/
-│   ├── ingest/          # Repository loading and file filtering
-│   ├── analysis/        # Feature extraction
-│   ├── model/           # Scoring, embeddings, classifier, explainer
-│   ├── report/          # Report generation
-│   ├── detector.py      # Phase 1 detector
-│   ├── detector_enhanced.py  # Phase 1+2+3 detector
-│   ├── cli.py           # Basic CLI
-│   └── cli_enhanced.py  # Enhanced CLI
-├── configs/             # Configuration files
-├── tests/               # Test suite
+├── src/ai_code_detector/    # the installable package
+│   ├── ingest/              # Repository loading and file filtering
+│   ├── analysis/            # Feature extraction
+│   ├── model/               # Scoring, embeddings, classifier, explainer
+│   ├── report/              # Report generation
+│   ├── configs/default.yaml # Default config (shipped in the wheel)
+│   ├── detector.py          # Phase 1 detector
+│   ├── detector_enhanced.py # Phase 1+2+3 detector
+│   ├── agent_scan.py        # Agent-prep scanner
+│   ├── cli.py               # ai-code-detector
+│   ├── cli_enhanced.py      # ai-code-detector-enhanced
+│   └── cli_agent_scan.py    # ai-code-detector-agent-scan
+├── tests/                   # Test suite (pytest)
 └── STATUS.txt           # Current project status
 ```
 

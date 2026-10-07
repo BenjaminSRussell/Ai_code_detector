@@ -3,10 +3,9 @@
 import sys
 import subprocess
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from click.testing import CliRunner
-from cli_agent_scan import main
+from ai_code_detector.cli_agent_scan import main
 
 
 def _init_repo(repo_dir: Path):

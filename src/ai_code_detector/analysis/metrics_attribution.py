@@ -4,7 +4,7 @@ import re
 from typing import Dict, List
 from dataclasses import dataclass
 
-from ingest.git_loader import RepoInfo
+from ..ingest.git_loader import RepoInfo
 
 
 @dataclass

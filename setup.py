@@ -2,15 +2,16 @@ from setuptools import setup, find_packages
 
 setup(
     name="ai-code-detector",
-    version="0.1.0",
+    version="0.3.0",
     description="Probabilistic AI-generated code detection for GitHub repositories",
     author="AI Code Detector Team",
+    # Single real package: src/ai_code_detector (#20). The old flat layout
+    # installed only analysis/ingest/model/report and no CLI at all.
     packages=find_packages(where="src"),
+    package_data={"ai_code_detector": ["configs/*.yaml"]},
     package_dir={"": "src"},
     install_requires=[
         "GitPython>=3.1.40",
-        "pygit2>=1.13.0",
-        "tree-sitter>=0.20.4",
         "numpy>=1.24.0",
         "scipy>=1.10.0",
         "scikit-learn>=1.3.0",
@@ -27,6 +28,10 @@ setup(
             "pytest>=7.4.0",
             "pytest-cov>=4.1.0",
         ],
+        # Not imported by the current code; reserved for tree-sitter backends (#7).
+        "treesitter": [
+            "tree-sitter>=0.20.4",
+        ],
         "mlx": [
             "mlx>=0.0.10",
             "mlx-lm>=0.0.10",
@@ -34,7 +39,9 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "ai-code-detector=cli:main",
+            "ai-code-detector=ai_code_detector.cli:main",
+            "ai-code-detector-enhanced=ai_code_detector.cli_enhanced:main",
+            "ai-code-detector-agent-scan=ai_code_detector.cli_agent_scan:main",
         ],
     },
     python_requires=">=3.9",

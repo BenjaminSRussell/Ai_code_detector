@@ -3,10 +3,9 @@
 import sys
 import json
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from model.findings import Finding, ScanFindings
-from report.reporter_findings import FindingsMarkdownWriter, FindingsJSONWriter
+from ai_code_detector.model.findings import Finding, ScanFindings
+from ai_code_detector.report.reporter_findings import FindingsMarkdownWriter, FindingsJSONWriter
 
 
 def _sample_findings():
