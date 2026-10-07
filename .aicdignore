@@ -1,0 +1,4 @@
+# Labeled / intentionally AI-styled fixtures: keep them out of `aicd scan` and the PR gate.
+datasets/fixtures/
+tests/fixtures/
+examples/sample_ai_code.py

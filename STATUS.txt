@@ -358,9 +358,9 @@ FUTURE WORK (PHASE 4)
 =============================================================================
 
 Validation:
-  - Build test harness for automated validation
-  - Collect labeled dataset (human vs AI)
-  - Compute ROC curves and calibration metrics
+  - [done #11] Eval harness: scripts/eval_harness.py / `aicd eval` (ROC AUC, calibration, confusion)
+  - Collect a real labeled dataset (human vs AI); the bundled manifest is a synthetic smoke fixture
+  - [done #11] ROC curves and calibration metrics (reports/eval/)
   - Adversarial testing
 
 Features:
