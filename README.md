@@ -290,6 +290,42 @@ With `--quiet` (the hook default) it stays silent when the commit passes and pri
 aicd gate --root tests/fixtures/gate_pr generated_helper.py hand_written.py third_party/vendored.py README.md -t 0.4
 ```
 
+## Evaluation (labeled set, ROC / calibration)
+
+```bash
+python scripts/eval_harness.py --manifest datasets/manifest.yaml --train   # same as: aicd eval --train
+```
+
+The harness writes these files to `reports/eval/` (gitignored):
+
+| File | Contents |
+|---|---|
+| `metrics.json` | ROC AUC, Brier score, ECE, confusion matrix at `--threshold` (default 0.5), the full ROC curve, and the calibration table |
+| `predictions.csv` | Per-file scores |
+| `roc_<scorer>.csv` | ROC curve points, ready to plot |
+| `calibration_<scorer>.csv` | Calibration table, ready to plot |
+| `summary.md` | A Markdown summary |
+
+Scorers:
+- **`basic`** is the heuristic score used by `aicd scan --mode basic` and `aicd gate`. It isn't trained, so it is evaluated on every file.
+- **`trained`** (with `--train`) fits the Phase 2 classifier on the manifest's `train` split, using the same features as `aicd train`, then scores the held-out `test` split.
+- **`model`** (with `--model model.json`) scores an existing model on the `test` split.
+
+`--min-auc X` exits 1 if any scorer drops below X. CI runs the harness on the fixture set with `--min-auc 0.5`, appends `summary.md` to the job summary, and uploads `reports/eval/` as the **`aicd-eval`** artifact.
+
+**Manifest** (`datasets/manifest.yaml`): entries are either a `path` or a `glob`, resolved relative to the manifest.
+- `label`: `human` or `ai`.
+- `split`: `train` or `test`. If omitted, the split is assigned deterministically from a hash of the path, using `test_fraction`.
+- `source`: free text recording provenance.
+
+To train a classifier on the same split you evaluate, use `aicd eval --train` and keep `reports/eval/model.json`. You can then pass it to `aicd explain --model` or `aicd eval --model`. `aicd train` takes a JSONL file of `{"path", "label"}` rows instead.
+
+**Caveats (read before quoting numbers):**
+- The bundled manifest is a **12-file synthetic smoke fixture**. Its "ai" files were written to imitate typical LLM style, and its "human" files are terse hand-written utilities. Its numbers check that the pipeline works. They are **not** an accuracy claim.
+- On the fixture, `basic` ranks every ai file above every human file (AUC 1.0), but all its scores fall below 0.5 (ai 0.40–0.49, human 0.11–0.18). It ranks well but is under-confident (ECE ≈ 0.35), so calibrate thresholds on your own data.
+- For a real evaluation, point `glob` entries at checked-out repos with known provenance (pin a commit SHA in `source`), with at least hundreds of files per class. Report AUC with that dataset's description.
+- Scores are probabilistic signals, not proof of authorship (see Limitations).
+
 ## Limitations
 
 This tool provides probabilistic analysis, not definitive proof:
