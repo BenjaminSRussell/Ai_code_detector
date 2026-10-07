@@ -34,35 +34,35 @@ git clone https://github.com/BenjaminSRussell/Ai_code_detector.git
 cd Ai_code_detector
 pip install -r requirements.txt
 pip install -e .
-# Console scripts: ai-code-detector, ai-code-detector-enhanced, ai-code-detector-agent-scan
-# (or: python -m ai_code_detector <repo>)
+# One console script: aicd (or: python -m ai_code_detector ...)
 ```
 
 ## Quick Start
 
-### Basic Detection (Phase 1)
-
 ```bash
-ai-code-detector https://github.com/user/repo
-ai-code-detector /path/to/local/repo
+# Repository report (Phase 1 heuristics only)
+aicd scan ./repo --mode basic
+
+# Enhanced: ML classifier + explanations (the default mode)
+aicd scan ./repo --mode enhanced
+aicd scan https://github.com/user/repo -f json -o reports/
+aicd scan ./repo --embedder mlx          # Apple Silicon embeddings
+aicd scan ./repo --no-ml                 # or --no-explanations
+
+# Agent-readable findings (AI_SCAN_FINDINGS.md + ai_scan_findings.json)
+aicd agent-scan ./repo
+
+# Explain one file
+aicd explain src/foo.py --json
+
+# Train the Phase 2 classifier from labeled JSONL ({"path": ..., "label": 0|1})
+aicd train labels.jsonl -o model.json
+aicd explain src/foo.py --model model.json
 ```
 
-### Enhanced Detection (Phase 2+3)
+`aicd scan` exits with 0 for low, 1 for moderate, and 2 for high AI probability.
 
-```bash
-# Enhanced with ML + explanations
-ai-code-detector-enhanced ./repo --mode enhanced
-
-# With hash embeddings (fast, no dependencies)
-ai-code-detector-enhanced ./repo --embedder hash
-
-# With MLX embeddings (Apple Silicon)
-ai-code-detector-enhanced ./repo --embedder mlx
-
-# Disable ML or explanations
-ai-code-detector-enhanced ./repo --no-ml
-ai-code-detector-enhanced ./repo --no-explanations
-```
+> **Deprecated:** `ai-code-detector`, `ai-code-detector-enhanced`, `ai-code-detector-agent-scan`, and `python -m ai_code_detector <repo>` still work for one release but print a notice. Use `aicd scan --mode basic`, `aicd scan`, and `aicd agent-scan` instead.
 
 ## How It Works
 
@@ -175,9 +175,10 @@ ai-code-detector/
 │   ├── detector.py          # Phase 1 detector
 │   ├── detector_enhanced.py # Phase 1+2+3 detector
 │   ├── agent_scan.py        # Agent-prep scanner
-│   ├── cli.py               # ai-code-detector
-│   ├── cli_enhanced.py      # ai-code-detector-enhanced
-│   └── cli_agent_scan.py    # ai-code-detector-agent-scan
+│   ├── aicd.py              # aicd: scan / agent-scan / explain / train
+│   ├── cli.py               # (deprecated) ai-code-detector
+│   ├── cli_enhanced.py      # aicd scan (was ai-code-detector-enhanced)
+│   └── cli_agent_scan.py    # aicd agent-scan (was ai-code-detector-agent-scan)
 ├── tests/                   # Test suite (pytest)
 └── STATUS.txt           # Current project status
 ```
