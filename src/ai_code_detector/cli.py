@@ -28,11 +28,21 @@ from .report.reporter_markdown import MarkdownReporter
     help='Report format'
 )
 @click.option(
+    '--suppressions',
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    help='Suppressions file (default: <repo>/.aicdignore when present)'
+)
+@click.option(
+    '--no-suppressions',
+    is_flag=True,
+    help='Ignore .aicdignore and scan every file'
+)
+@click.option(
     '--quiet', '-q',
     is_flag=True,
     help='Suppress progress output'
 )
-def main(source: str, config: Path, output: Path, format: str, quiet: bool):
+def main(source: str, config: Path, output: Path, format: str, suppressions: Path, no_suppressions: bool, quiet: bool):
     """Analyze a GitHub repository or local directory for AI-generated code.
 
     SOURCE can be:
@@ -52,6 +62,8 @@ def main(source: str, config: Path, output: Path, format: str, quiet: bool):
 
     # Initialize detector
     detector = AICodeDetector(config_path=config)
+    detector.file_filter.suppressions_file = suppressions
+    detector.file_filter.use_suppressions = not no_suppressions
 
     # Run analysis
     try:

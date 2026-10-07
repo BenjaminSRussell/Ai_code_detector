@@ -114,6 +114,7 @@ class AgentPrepScanner:
             repo_path=str(repo_info.path),
             ai_probability=repo_score.ai_probability,
             findings=findings,
+            suppressed=self.file_filter.last_suppressed.to_dict(),
         )
 
     def _build_attribution_findings(self, features: AttributionFeatures) -> List[Finding]:

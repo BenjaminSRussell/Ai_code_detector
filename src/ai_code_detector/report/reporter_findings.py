@@ -18,6 +18,11 @@ class FindingsMarkdownWriter:
         lines.append("")
         lines.append(f"**Repository:** `{findings.repo_path}`")
         lines.append(f"**AI Probability:** {findings.ai_probability * 100:.1f}%")
+        if findings.suppressed and findings.suppressed.get("count"):
+            lines.append(
+                f"**Suppressed:** {findings.suppressed['count']} files via "
+                f"`{findings.suppressed.get('source') or '.aicdignore'}`"
+            )
 
         verdict = MarkdownReporter()._get_verdict(findings.ai_probability)
         lines.append(f"**Verdict:** {verdict}")
@@ -73,6 +78,7 @@ class FindingsJSONWriter:
         payload = {
             "repo_path": findings.repo_path,
             "ai_probability": findings.ai_probability,
+            "suppressed": findings.suppressed or {"count": 0},
             "findings": [
                 {
                     "type": f.type,
