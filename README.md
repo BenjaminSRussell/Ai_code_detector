@@ -98,6 +98,33 @@ AI-generated repositories often show:
 - File creation bursts: Most files created simultaneously
 - Dense timeline: Complete repo created in days/hours
 
+## Parsing backends (tree-sitter)
+
+Structural metrics such as cyclomatic complexity, docstring ratio, try/except ratio, unused imports and unreachable code need a syntax tree. The backend is set by `analysis.ast_backend` in the config (`configs/default.yaml`):
+
+| `ast_backend` | Python | JS / TS / TSX / Go / Rust | Everything else |
+|---|---|---|---|
+| `auto` (default) | builtin `ast` | tree-sitter if installed, else regex | regex |
+| `tree_sitter` | tree-sitter | tree-sitter if installed, else regex | regex |
+| `python` | builtin `ast` | regex | regex |
+
+Install the grammars with `pip install "ai-code-detector[treesitter]"`.
+
+**What changes for a TypeScript file** (from `tests/fixtures/tree_sitter/service.ts`, asserted in `tests/test_tree_sitter.py`):
+
+| Metric | Regex fallback | Tree-sitter |
+|---|---|---|
+| avg cyclomatic complexity | 0 | 2.8 (if/for/catch/case/ternary/`&&`/`\|\|`/`??`) |
+| complexity-to-docstring ratio | 0 | > 0 (only JSDoc `/** */` counts as documentation) |
+| try/except ratio | 0 | 0.2 |
+| unused import ratio | 0 | 0.2 (uses local names, so `{ get as httpGet }` counts as `httpGet`) |
+| unreachable code | 0 | 0.2 (a statement after `return`/`throw`/`break`/`continue` in the same block) |
+| generic exceptions, print-on-error, missing cleanup | text patterns | same text patterns |
+
+Go uses `//` doc comments directly above a declaration, and methods count as functions. Rust uses `///` doc comments, and `impl` blocks count as classes. Running Python through tree-sitter gives the same functions, classes and complexities as the builtin parser on `examples/`. The difference is imports: tree-sitter records alias names.
+
+Without the grammars, tests marked `treesitter` are skipped with a reason. CI runs them in the `test-treesitter` job.
+
 ## Configuration
 
 Customize detection via YAML config:
@@ -367,7 +394,7 @@ To train a classifier on the same split you evaluate, use `aicd eval --train` an
 
 **Caveats (read before quoting numbers):**
 - The bundled manifest is a **12-file synthetic smoke fixture**. Its "ai" files were written to imitate typical LLM style, and its "human" files are terse hand-written utilities. Its numbers check that the pipeline works. They are **not** an accuracy claim.
-- On the fixture, `basic` ranks every ai file above every human file (AUC 1.0), but all its scores fall below 0.5 (ai 0.40–0.49, human 0.11–0.18). It ranks well but is under-confident (ECE ≈ 0.35), so calibrate thresholds on your own data.
+- On the fixture, `basic` ranks every ai file above every human file (AUC 1.0), but it is under-confident: ai files score 0.41–0.52 and human files 0.11–0.18, so at a 0.5 threshold it catches only 1 of 6 (ECE ≈ 0.35). Calibrate thresholds on your own data.
 - For a real evaluation, point `glob` entries at checked-out repos with known provenance (pin a commit SHA in `source`), with at least hundreds of files per class. Report AUC with that dataset's description.
 - Scores are probabilistic signals, not proof of authorship (see Limitations).
 

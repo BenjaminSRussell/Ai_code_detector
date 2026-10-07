@@ -32,6 +32,14 @@ ingestion:
 
   max_file_size_mb: 1
 
+# Parsing backend for structural metrics (#7)
+#   python       builtin `ast`, Python only; other languages use regex-only features
+#   tree_sitter  tree-sitter for Python, JavaScript, TypeScript/TSX, Go and Rust
+#   auto         builtin `ast` for Python + tree-sitter for the rest when installed
+#                (pip install 'ai-code-detector[treesitter]'), regex fallback otherwise
+analysis:
+  ast_backend: auto
+
 # Feature extraction settings
 features:
   stylometry:

@@ -77,8 +77,8 @@ class StructuralAnalyzer:
         Returns:
             StructuralFeatures
         """
-        if not file_ast or language != "python":
-            # Return default features for unsupported languages
+        if not file_ast:
+            # No parser for this language/backend: regex-only features
             return self._default_features(code)
 
         # Complexity metrics
@@ -114,6 +114,17 @@ class StructuralAnalyzer:
             missing_cleanup_score=cleanup_score,
         )
 
+    @staticmethod
+    def _all_functions(file_ast: FileAST) -> list:
+        """Top-level functions plus methods, without mutating file_ast.
+
+        (Previously each metric did ``file_ast.functions.extend(methods)``,
+        so methods were appended again by every metric that ran, which
+        skewed later metrics and the stylometry similarity that reads the
+        same list.)
+        """
+        return list(file_ast.functions) + [m for cls in file_ast.classes for m in cls.methods]
+
     def _default_features(self, code: str) -> StructuralFeatures:
         """Return default features when AST not available."""
         # Use simple regex-based analysis
@@ -137,9 +148,7 @@ class StructuralAnalyzer:
 
     def _calculate_avg_complexity(self, file_ast: FileAST) -> float:
         """Calculate average cyclomatic complexity."""
-        functions = file_ast.functions
-        for cls in file_ast.classes:
-            functions.extend(cls.methods)
+        functions = self._all_functions(file_ast)
 
         if not functions:
             return 0.0
@@ -151,9 +160,7 @@ class StructuralAnalyzer:
 
         High value suggests simple code with verbose docs (AI pattern).
         """
-        functions = file_ast.functions
-        for cls in file_ast.classes:
-            functions.extend(cls.methods)
+        functions = self._all_functions(file_ast)
 
         if not functions:
             return 0.0
@@ -172,9 +179,7 @@ class StructuralAnalyzer:
 
         Returns 0-1, higher means more over-explanation.
         """
-        functions = file_ast.functions
-        for cls in file_ast.classes:
-            functions.extend(cls.methods)
+        functions = self._all_functions(file_ast)
 
         if not functions:
             return 0.0
@@ -215,14 +220,12 @@ class StructuralAnalyzer:
 
     def _calculate_try_except_ratio(self, file_ast: FileAST) -> float:
         """Calculate ratio of functions using try/except."""
-        functions = file_ast.functions
-        for cls in file_ast.classes:
-            functions.extend(cls.methods)
+        functions = self._all_functions(file_ast)
 
         if not functions:
             return 0.0
 
-        try_count = sum(1 for f in functions if 'try' in f.code.lower())
+        try_count = sum(1 for f in functions if re.search(r'\btry\b', f.code))
         return try_count / len(functions)
 
     def _calculate_unused_function_ratio(self, file_ast: FileAST) -> float:
@@ -264,8 +267,9 @@ class StructuralAnalyzer:
             parts = imp.split('.')
             name = parts[-1]
 
-            # Check if name appears in code (simple heuristic)
-            if name not in code or code.count(name) <= 1:
+            # Used = the name appears as a whole word somewhere besides its import
+            # (substring counting made `io` "used" by `Option`, `os` by `pos`, ...)
+            if len(re.findall(rf'(?<![\w$]){re.escape(name)}(?![\w$])', code)) <= 1:
                 unused_count += 1
 
         return unused_count / len(file_ast.imports)
@@ -275,9 +279,7 @@ class StructuralAnalyzer:
 
         Simple patterns: code after return/break/continue in same block.
         """
-        functions = file_ast.functions
-        for cls in file_ast.classes:
-            functions.extend(cls.methods)
+        functions = self._all_functions(file_ast)
 
         if not functions:
             return 0.0
@@ -285,6 +287,9 @@ class StructuralAnalyzer:
         unreachable_count = 0
 
         for func in functions:
+            if func.unreachable is not None:  # computed from the syntax tree (tree-sitter)
+                unreachable_count += int(func.unreachable)
+                continue
             lines = func.code.split('\n')
             for i, line in enumerate(lines):
                 stripped = line.strip()

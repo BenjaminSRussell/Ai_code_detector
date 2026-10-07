@@ -364,7 +364,7 @@ Validation:
   - Adversarial testing
 
 Features:
-  - Tree-sitter integration for all languages
+  - [done #7] Tree-sitter backends for Python/JS/TS/Go/Rust (analysis.ast_backend)
   - Incremental analysis (only changed files)
   - Pre-commit hook support
   - IDE integration plugins

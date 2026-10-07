@@ -19,6 +19,22 @@ jobs:
       - name: Tests
         run: pytest -q
 
+  test-treesitter:
+    # #7: full suite with the optional tree-sitter grammars installed
+    # (the plain `test` job runs without them; `treesitter` tests skip there).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev,treesitter]"
+      - name: Tree-sitter tests (must not skip)
+        shell: bash  # -eo pipefail, so a pytest failure isn't masked by tee
+        run: pytest -q -m treesitter -rs tests/test_tree_sitter.py | tee ts.log && ! grep -q SKIPPED ts.log
+      - name: Full suite with grammars
+        run: pytest -q
+
   install-smoke:
     # #20: a plain (non-editable) install must ship the CLIs and default config.
     runs-on: ubuntu-latest

@@ -29,9 +29,14 @@ setup(
             "pytest-cov>=4.1.0",
             "jsonschema>=4.0",
         ],
-        # Not imported by the current code; reserved for tree-sitter backends (#7).
+        # Tree-sitter structural metrics for JS/TS/Go/Rust (#7); see analysis.ast_backend.
         "treesitter": [
-            "tree-sitter>=0.20.4",
+            "tree-sitter>=0.23",
+            "tree-sitter-python>=0.23",
+            "tree-sitter-javascript>=0.23",
+            "tree-sitter-typescript>=0.23",
+            "tree-sitter-go>=0.23",
+            "tree-sitter-rust>=0.23",
         ],
         "mlx": [
             "mlx>=0.0.10",
