@@ -1,5 +1,7 @@
 """Enhanced detector integrating heuristics, ML classifier, and explanations."""
 
+import hashlib
+from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, List, Optional
 import yaml
@@ -288,6 +290,12 @@ class EnhancedAICodeDetector:
 
         # Set file path
         file_score.file_path = str(file_info.relative_path)
+        # #6: provenance for the scan store (content hash, raw feature values)
+        file_score.language = file_info.language
+        file_score.content_sha256 = hashlib.sha256(code.encode("utf-8", "surrogatepass")).hexdigest()
+        file_score.features = {"stylometry": asdict(stylometry_features),
+                               "structural": asdict(structural_features)}
+        file_score.ml_used = bool(self.use_ml and self.embedder and self.ml_classifier)
 
         return file_score
 

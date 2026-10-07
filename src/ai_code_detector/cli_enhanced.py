@@ -7,6 +7,7 @@ import click
 from .detector_enhanced import EnhancedAICodeDetector
 from .report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
 from .report.reporter_sarif import SarifReporter
+from .store import DEFAULT_STORE, ScanStore
 
 
 @click.command()
@@ -33,6 +34,14 @@ from .report.reporter_sarif import SarifReporter
     default=0.4,
     show_default=True,
     help='Lowest file AI probability that becomes a SARIF result (note level)'
+)
+@click.option(
+    '--store',
+    type=click.Path(dir_okay=False, path_type=Path),
+    is_flag=False,
+    flag_value=str(DEFAULT_STORE),
+    default=None,
+    help=f'Append this run to a SQLite history (bare --store = {DEFAULT_STORE})'
 )
 @click.option(
     '--mode',
@@ -83,6 +92,7 @@ def main(
     output: Path,
     format: str,
     sarif_min_probability: float,
+    store: Path,
     mode: str,
     no_ml: bool,
     no_explanations: bool,
@@ -147,6 +157,8 @@ def main(
     detector.file_filter.use_suppressions = not no_suppressions
 
     # Run analysis
+    from datetime import datetime, timezone
+    started_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     try:
         repo_score = detector.analyze_repo(source, verbose=not quiet)
     except Exception as e:
@@ -192,6 +204,22 @@ def main(
         SarifReporter(min_probability=sarif_min_probability).generate(repo_score, sarif_path)
         if not quiet:
             print(f"SARIF report saved to: {sarif_path}")
+
+    if store:
+        local = Path(source)
+        with ScanStore(store) as db:
+            scan_id = db.record(
+                repo_score,
+                source=str(local.resolve()) if local.exists() else source,
+                mode=mode,
+                use_ml=use_ml,
+                use_explanations=use_explanations,
+                config=detector.config,
+                file_threshold=detector.heuristic_aggregator.file_threshold,
+                started_at=started_at,
+            )
+        if not quiet:
+            print(f"Scan #{scan_id} stored in: {store}")
 
     # Print summary
     if not quiet:

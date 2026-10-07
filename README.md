@@ -187,6 +187,37 @@ ai-code-detector/
 
 See STATUS.txt for detailed information about what is implemented, tested, and ready to use.
 
+## Scan history (SQLite)
+
+```bash
+aicd scan ./repo --store ./scans.db      # bare `--store` uses ~/.cache/ai_code_detector/scans.db
+aicd history --store ./scans.db --repo ./repo          # runs, newest first
+aicd history --store ./scans.db --scan 3               # one run's files ([H]euristic/[M]L/[E]xplanation flags)
+aicd history --store ./scans.db --repo ./repo --file src/app.py   # one path's probability across runs
+```
+
+Each run **appends** a row to `scans`. Earlier runs are never updated or deleted, so regressions can be compared over time.
+
+| Table | Row per | Columns |
+|---|---|---|
+| `scans` | run | repo path and source, start/finish time (UTC), mode, ML/explanation flags, detector version, config fingerprint, repo scores, files, lines, languages, suppressed count |
+| `files` | analyzed path in a run | probability, stylometry/structural scores, `phase_heuristic`/`phase_ml`/`phase_explanation`, `parse_failed`, `content_sha256` |
+| `features` | file | raw stylometry and structural feature values, feature contributions, indicators (all JSON) |
+| `verdicts` | repo verdict, plus each file at or above the file threshold (`scoring.thresholds.file_threshold`, default 0.6) | verdict, with the explanation when there is one |
+
+**Schema and migrations:** every table is created with `CREATE TABLE IF NOT EXISTS`, and the schema version is kept in `PRAGMA user_version` (currently 1).
+- Opening a database runs any missing migrations in order (`_MIGRATIONS` in `src/ai_code_detector/store.py`).
+- A database written by a newer aicd is refused rather than downgraded.
+
+There's no separate migration script: open the database with aicd, or apply `_SCHEMA_V1` yourself.
+
+```sql
+-- latest probability of every file in the newest scan of a repo
+SELECT f.path, f.ai_probability FROM files f
+WHERE f.scan_id = (SELECT max(id) FROM scans WHERE repo_path = '/abs/path/to/repo')
+ORDER BY f.ai_probability DESC;
+```
+
 ## SARIF export (GitHub code scanning)
 
 ```bash

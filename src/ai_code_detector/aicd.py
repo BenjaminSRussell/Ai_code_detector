@@ -5,6 +5,7 @@
     aicd explain FILE ...                           score + explanation for one file
     aicd train DATASET.jsonl -o model.json          fit the Phase 2 classifier
     aicd gate FILES... [--threshold 0.7]            fail if any file is above threshold (PR/pre-commit)
+    aicd history [--repo PATH] [--scan ID]          scan runs stored with `aicd scan --store`
     aicd eval --manifest datasets/manifest.yaml     ROC AUC / calibration on a labeled set
 
 ``scan`` is the former ``ai-code-detector-enhanced`` command, with the same
@@ -25,7 +26,7 @@ from . import cli as _cli_basic
 from . import cli_agent_scan as _cli_agent_scan
 from . import cli_enhanced as _cli_enhanced
 
-SUBCOMMANDS = ("scan", "agent-scan", "explain", "train", "gate", "eval")
+SUBCOMMANDS = ("scan", "agent-scan", "explain", "train", "gate", "eval", "history")
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -38,9 +39,11 @@ main.add_command(_cli_enhanced.main, name="scan")
 main.add_command(_cli_agent_scan.main, name="agent-scan")
 
 from .gate import gate as _gate  # noqa: E402
+from .store import history as _history  # noqa: E402
 from .evaluation import main as _eval  # noqa: E402
 
 main.add_command(_gate, name="gate")
+main.add_command(_history, name="history")
 main.add_command(_eval, name="eval")
 
 
