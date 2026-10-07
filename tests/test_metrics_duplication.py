@@ -107,3 +107,34 @@ def test_line_numbers_account_for_blank_lines():
 
     # For file_b, it should be 1
     assert locations_by_file["b.py"] == 1, f"Expected line 1 for b.py, got {locations_by_file['b.py']}"
+
+
+def test_shared_import_header_is_not_duplication():
+    analyzer = RepoDuplicationAnalyzer()
+    header = "import os\nimport sys\nfrom pathlib import Path\n"
+    file_contents = {
+        "a.py": header + "def a():\n    return 1\n",
+        "b.py": header + "def b():\n    return 2\n",
+    }
+    features = analyzer.analyze_repo(file_contents)
+    assert features.duplicate_blocks == []
+
+
+def test_copied_function_produces_one_merged_block():
+    analyzer = RepoDuplicationAnalyzer()
+    shared = (
+        "def process(data):\n"
+        "    result = []\n"
+        "    for item in data:\n"
+        "        cleaned = item.strip()\n"
+        "        if cleaned:\n"
+        "            result.append(cleaned.upper())\n"
+        "        else:\n"
+        "            result.append('EMPTY')\n"
+        "    return sorted(result)\n"
+        "\n"
+    )
+    features = analyzer.analyze_repo({"a.py": shared, "b.py": shared})
+    assert len(features.duplicate_blocks) == 1
+    files_hit = {loc[0] for loc in features.duplicate_blocks[0].locations}
+    assert files_hit == {"a.py", "b.py"}

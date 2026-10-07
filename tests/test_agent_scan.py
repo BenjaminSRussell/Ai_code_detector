@@ -110,9 +110,8 @@ def test_duplication_findings_collapse_overlapping_windows():
     duplication_analyzer = RepoDuplicationAnalyzer()
     features = duplication_analyzer.analyze_repo(file_contents)
 
-    # Sanity check: overlapping 3-line windows over a 7-line shared block
-    # produce multiple DuplicateBlock entries in the raw analyzer output.
-    assert len(features.duplicate_blocks) > 1
+    # Analyzer merges overlapping windows into one maximal region per file-set.
+    assert len(features.duplicate_blocks) == 1
 
     scanner = AgentPrepScanner()
     duplication_findings = scanner._build_duplication_findings(features)
@@ -199,3 +198,40 @@ def test_profiling_gate_is_invoked_when_enabled_with_tests_dir(tmp_path, monkeyp
     scanner.scan(str(repo_dir), verbose=False)
 
     assert len(calls) == 1
+
+
+def test_scan_loads_repo_and_reads_files_once(tmp_path, monkeypatch):
+    repo_dir = tmp_path / "once_repo"
+    repo_dir.mkdir()
+    _init_repo(repo_dir)
+    (repo_dir / "one.py").write_text("def hello():\n    return 42\n")
+    _commit_all(repo_dir, "init")
+
+    scanner = AgentPrepScanner(enable_profiling=False)
+    load_calls = {"n": 0}
+    open_paths = []
+
+    real_load = scanner.git_loader.load
+
+    def counting_load(source):
+        load_calls["n"] += 1
+        return real_load(source)
+
+    monkeypatch.setattr(scanner.git_loader, "load", counting_load)
+
+    import builtins
+    real_open = builtins.open
+
+    def tracking_open(path, *args, **kwargs):
+        path_s = str(path)
+        if path_s.endswith(".py") and "once_repo" in path_s:
+            open_paths.append(path_s)
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "open", tracking_open)
+
+    scanner.scan(str(repo_dir), verbose=False)
+    assert load_calls["n"] == 1
+    # Each source file should be opened once for content (configs may also open)
+    py_opens = [p for p in open_paths if p.endswith("one.py")]
+    assert len(py_opens) == 1

@@ -97,8 +97,8 @@ class FileFilter:
 
                 # Count lines
                 try:
-                    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                        line_count = sum(1 for _ in f)
+                    # Defer full reads to the analyzer so each file is opened once.
+                    line_count = 0
                 except Exception:
                     line_count = 0
 
