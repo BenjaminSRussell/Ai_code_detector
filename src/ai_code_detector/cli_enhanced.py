@@ -8,6 +8,7 @@ from .detector_enhanced import EnhancedAICodeDetector
 from .report.reporter_enhanced import EnhancedJSONReporter, EnhancedMarkdownReporter
 from .report.reporter_sarif import SarifReporter
 from .store import DEFAULT_STORE, ScanStore
+from .report.reporter_html import HTMLReporter
 
 
 @click.command()
@@ -52,6 +53,18 @@ from .store import DEFAULT_STORE, ScanStore
     '--force-full',
     is_flag=True,
     help='With --incremental: recompute every file and refresh the cache'
+)
+@click.option(
+    '--html', 'html_path',
+    type=click.Path(dir_okay=False, path_type=Path),
+    help='Also write a self-contained HTML viewer (sortable file table, threshold slider, feature bars)'
+)
+@click.option(
+    '--html-threshold',
+    type=click.FloatRange(0.0, 1.0),
+    default=0.0,
+    show_default=True,
+    help='Initial threshold of the HTML viewer slider (also settable with ?threshold= in the URL)'
 )
 @click.option(
     '--mode',
@@ -105,6 +118,8 @@ def main(
     store: Path,
     incremental: bool,
     force_full: bool,
+    html_path: Path,
+    html_threshold: float,
     mode: str,
     no_ml: bool,
     no_explanations: bool,
@@ -236,6 +251,11 @@ def main(
         SarifReporter(min_probability=sarif_min_probability).generate(repo_score, sarif_path)
         if not quiet:
             print(f"SARIF report saved to: {sarif_path}")
+
+    if html_path:
+        HTMLReporter(mode=mode, threshold=html_threshold).generate(repo_score, html_path)
+        if not quiet:
+            print(f"HTML viewer saved to: {html_path}")
 
     if store:
         local = Path(source)

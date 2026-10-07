@@ -300,6 +300,12 @@ class EnhancedAICodeDetector:
             # Ensemble: combine heuristic + ML
             ensemble_prob = 0.4 * file_score.ai_probability + 0.6 * ml_prob
             file_score.ai_probability = ensemble_prob
+            # Keep the decomposition additive: heuristic terms get the 0.4
+            # share, the classifier is one opaque 0.6 * p term.
+            file_score.feature_contributions = {
+                **{k: 0.4 * v for k, v in file_score.feature_contributions.items()},
+                'ml_classifier': 0.6 * ml_prob,
+            }
 
         # Phase 3: Generate explanation
         if self.use_explanations and self.explainer and file_score.ai_probability > 0.5:

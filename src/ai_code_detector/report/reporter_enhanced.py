@@ -55,6 +55,12 @@ class EnhancedJSONReporter:
                 "explanations": {
                     k: round(v, 3) for k, v in file_score.feature_explanations.items()
                 },
+                # #10: top features by share of ai_probability (additive)
+                "top_features": [
+                    {"feature": k, "share": round(v, 4)}
+                    for k, v in sorted((getattr(file_score, "feature_contributions", None) or {}).items(),
+                                       key=lambda kv: -kv[1])[:5] if v > 0
+                ],
             }
 
             # Add natural language explanation if available (Phase 3)
