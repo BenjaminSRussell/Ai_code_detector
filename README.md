@@ -64,6 +64,39 @@ aicd explain src/foo.py --model model.json
 
 > **Deprecated:** `ai-code-detector`, `ai-code-detector-enhanced`, `ai-code-detector-agent-scan`, and `python -m ai_code_detector <repo>` still work for one release but print a notice. Use `aicd scan --mode basic`, `aicd scan`, and `aicd agent-scan` instead.
 
+## Example — one scan, end to end
+
+The repo ships two samples: `examples/sample_ai_code.py` (written to imitate LLM style) and `examples/sample_human_code.py` (hand-written). Scanning `examples/` shows the tool doing its job on known inputs:
+
+```bash
+aicd scan ./examples --mode basic
+```
+
+```
+============================================================
+Summary
+============================================================
+
+Repository: ./examples
+AI Probability: 32.2%
+Confidence: 81.5%
+
+Verdict: Likely human-written
+
+Top suspicious files:
+  1. sample_ai_code.py (52.1%)
+  2. demo.py (15.4%)
+  3. sample_human_code.py (10.8%)
+```
+
+### Reading the number
+
+- **The AI sample scores 52.1%; the human sample scores 10.8%.** The detector ranks the known AI file well above the known human file — that ordering, not any single threshold, is the signal. The full 12-file fixture and its recorded scores live in `datasets/manifest.yaml` and `datasets/expected_scores.json`, and `tests/test_regression_fixture.py` fails CI if the ordering ever breaks.
+- **The repo score (32.2%) is an aggregate** over all files in the directory (0.6 × mean + 0.4 × max file probability, blended with the git-history score), so one suspicious file does not make a whole repo "AI-generated" — check the per-file list.
+- **Confidence (81.5%) is agreement, not accuracy.** It is `1 − std(per-file scores)`: the three example files score 0.52 / 0.15 / 0.11, so they mostly agree and confidence is high. A repo where half the files score 0.9 and half score 0.1 would have low confidence even with a middling average. It is not a calibrated probability that the verdict is right.
+- **What the number does not mean:** it is a probabilistic stylometric signal, not proof of authorship. Well-structured human code can score high, edited AI code can score low, and simple refactoring lowers a score. Do not use it as sole evidence for a policy or disciplinary decision — use it alongside code review, author interviews, and development timeline (see Limitations).
+- **Calibrate on your own data:** on this tiny synthetic fixture the detector is under-confident (AI files score 0.41–0.52), so the default 0.5 threshold catches only 1 of 6 AI files. Pick thresholds from a labeled set of your own code (see Evaluation).
+
 ## How It Works
 
 The detector analyzes code across three dimensions:
