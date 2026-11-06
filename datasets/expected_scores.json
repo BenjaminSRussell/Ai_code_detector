@@ -1,0 +1,69 @@
+{
+  "_comment": "Regression fixture for goal issue #31: recorded `basic` scores for every file in datasets/manifest.yaml. Captured 2026-11-06 with `python scripts/eval_harness.py --manifest datasets/manifest.yaml --train` (predictions.csv, basic column). tests/test_regression_fixture.py re-scores the same files and fails if any score drifts more than `tolerance` or if an AI file no longer scores above every human file. To refresh after an intentional scoring change, re-run the harness and update the `expected` values in this file \u2014 never edit them by hand to make a failing test pass. These are synthetic smoke-fixture numbers, not an accuracy claim (see datasets/manifest.yaml).",
+  "files": [
+    {
+      "expected": 0.1083,
+      "label": "human",
+      "path": "fixtures/human/lru.py"
+    },
+    {
+      "expected": 0.1792,
+      "label": "human",
+      "path": "fixtures/human/semver.py"
+    },
+    {
+      "expected": 0.15,
+      "label": "human",
+      "path": "fixtures/human/tail.py"
+    },
+    {
+      "expected": 0.1083,
+      "label": "human",
+      "path": "../examples/sample_human_code.py"
+    },
+    {
+      "expected": 0.15,
+      "label": "human",
+      "path": "fixtures/human/csvsum.py"
+    },
+    {
+      "expected": 0.1528,
+      "label": "human",
+      "path": "fixtures/human/retry.py"
+    },
+    {
+      "expected": 0.414,
+      "label": "ai",
+      "path": "fixtures/ai/user_manager.py"
+    },
+    {
+      "expected": 0.4053,
+      "label": "ai",
+      "path": "fixtures/ai/file_processor.py"
+    },
+    {
+      "expected": 0.4855,
+      "label": "ai",
+      "path": "fixtures/ai/calculator.py"
+    },
+    {
+      "expected": 0.5214,
+      "label": "ai",
+      "path": "../examples/sample_ai_code.py"
+    },
+    {
+      "expected": 0.4282,
+      "label": "ai",
+      "path": "fixtures/ai/config_loader.py"
+    },
+    {
+      "expected": 0.4165,
+      "label": "ai",
+      "path": "fixtures/ai/data_validator.py"
+    }
+  ],
+  "manifest": "datasets/manifest.yaml",
+  "manifest_version": 1,
+  "scorer": "basic",
+  "tolerance": 0.02
+}
