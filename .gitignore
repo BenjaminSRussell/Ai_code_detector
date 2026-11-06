@@ -62,6 +62,8 @@ logs/
 # Reports
 reports/
 *.json
+# Regression fixture for goal #31 — committed on purpose
+!datasets/expected_scores.json
 AI_SCAN_FINDINGS.md
 reports/*.md
 !README.md
